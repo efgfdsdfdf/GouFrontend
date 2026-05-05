@@ -18,21 +18,3 @@ services:
         value: SET_IN_RENDER_DASHBOARD
       - key: ALLOWED_ORIGINS
         value: "https://gounion-frontend.onrender.com,https://localhost,capacitor://localhost,http://localhost,https://gounion-download.vercel.app"
-
-  - type: web
-    name: gounion-frontend
-    runtime: static
-    rootDir: gounion-remake
-    buildCommand: npm install && npm run build
-    staticPublishPath: dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_API_URL
-        value: https://gounion-backend.onrender.com
