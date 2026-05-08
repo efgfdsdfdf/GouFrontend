@@ -1,0 +1,121 @@
+import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Bell, Heart, MessageCircle, UserPlus, Check } from "lucide-react";
+import { transformUser } from "../../services/api"; // I'll need to export this or just handle it localy
+
+interface Notification {
+  id: string;
+  type: string;
+  actor: any;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
+
+interface NotificationDropdownProps {
+  notifications: Notification[];
+  onClose: () => void;
+  onMarkRead: () => void;
+  onItemClick: (n: Notification) => void;
+}
+
+export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
+  notifications,
+  onClose,
+  onMarkRead,
+  onItemClick,
+}) => {
+  const getIcon = (type: string) => {
+    switch (type) {
+      case "like":
+        return <Heart size={14} className="text-primary fill-primary" />;
+      case "comment":
+        return <MessageCircle size={14} className="text-accent fill-accent" />;
+      case "follow":
+        return <UserPlus size={14} className="text-blue-400" />;
+      default:
+        return <Bell size={14} className="text-zinc-400" />;
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      className="absolute top-full right-0 mt-4 w-96 bg-[#141417]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[110]"
+    >
+      <div className="p-6 border-b border-white/5 flex items-center justify-between">
+        <h3 className="text-white font-black text-xs uppercase tracking-widest">
+          Notifications
+        </h3>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarkRead();
+          }}
+          className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-80 transition-opacity"
+        >
+          Clear All
+        </button>
+      </div>
+
+      <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+        {notifications.length > 0 ? (
+          notifications.map((n) => (
+            <div
+              key={n.id}
+              onClick={(e) => {
+                e.preventDefault();
+                onItemClick(n);
+              }}
+              className={`p-5 border-b border-white/5 flex gap-4 hover:bg-white/[0.04] transition-all cursor-pointer relative group active:scale-[0.98] ${!n.read ? "bg-primary/[0.03]" : ""}`}
+            >
+              <div className="relative shrink-0">
+                <img
+                  src={n.actor.avatarUrl}
+                  className="w-10 h-10 rounded-full object-cover border border-white/10"
+                  alt={n.actor.username}
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0a0a0c] rounded-full flex items-center justify-center border border-white/5 shadow-lg">
+                  {getIcon(n.type)}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] text-zinc-300 leading-snug">
+                  <span className="font-black text-white">
+                    {n.actor.username}
+                  </span>{" "}
+                  {n.message.replace(n.actor.username, "").trim()}
+                </p>
+                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight mt-1 group-hover:text-zinc-500 transition-colors">
+                  {n.timestamp}
+                </span>
+              </div>
+
+              {!n.read && (
+                <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0 animate-pulse" />
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="py-12 text-center">
+            <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 text-zinc-600">
+              <Bell size={24} />
+            </div>
+            <p className="text-zinc-500 font-bold text-xs uppercase tracking-widest">
+              No notifications yet
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 bg-[#0a0a0c]/50 text-center">
+        <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
+          View All History
+        </button>
+      </div>
+    </motion.div>
+  );
+};

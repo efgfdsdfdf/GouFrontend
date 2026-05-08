@@ -1,0 +1,113 @@
+import React, { useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../services/api';
+import { Bell, Heart, MessageSquare, UserPlus, Users, ArrowLeft } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+
+const getIconForType = (type: string) => {
+  switch (type) {
+    case 'like': return <Heart size={16} className="text-red-400" />;
+    case 'comment': return <MessageSquare size={16} className="text-blue-400" />;
+    case 'follow': return <UserPlus size={16} className="text-emerald-400" />;
+    case 'group_invite':
+    case 'group_request': return <Users size={16} className="text-purple-400" />;
+    default: return <Bell size={16} className="text-white/50" />;
+  }
+};
+
+const getMessageForType = (type: string) => {
+  switch (type) {
+    case 'like': return "liked your post.";
+    case 'comment': return "commented on your post.";
+    case 'follow': return "started following you.";
+    case 'group_invite': return "invited you to a group.";
+    case 'group_request': return "requested to join your group.";
+    default: return "interacted with you.";
+  }
+};
+
+export const Notifications = () => {
+  const queryClient = useQueryClient();
+
+  const { data: notifications, isLoading } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: api.notifications.getAll,
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: api.notifications.markRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+
+  useEffect(() => {
+    // Attempt to mark all as read when opening this page
+    markReadMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div className="max-w-3xl mx-auto w-full pb-24 pt-8">
+      <div className="mb-8 relative p-8 rounded-[2rem] glass-panel overflow-hidden border border-white/5 shadow-2xl flex items-center gap-4">
+        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+          <Bell size={28} className="text-white" />
+        </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Notifications</h1>
+          <p className="text-zinc-400 font-medium mt-1">Activity across your network.</p>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 glass-panel rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : notifications?.length === 0 ? (
+        <div className="glass-panel p-16 text-center rounded-[2rem] border border-dashed border-white/10">
+          <Bell size={48} className="mx-auto text-white/10 mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">You're all caught up!</h2>
+          <p className="text-white/40">When someone interacts with you, it will show up here.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {notifications?.map((notif: any, i: number) => (
+            <motion.div
+              key={notif.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className={`glass-panel p-4 rounded-2xl flex items-center gap-4 border transition-colors ${notif.is_read ? 'border-white/5 opacity-75' : 'border-primary/30 bg-primary/5'}`}
+            >
+              <Link to={`/profile/${notif.sender?.username}`} className="relative">
+                <img 
+                  src={notif.sender?.profile?.profile_picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.sender?.username}`}
+                  alt="" 
+                  className="w-12 h-12 rounded-xl object-cover bg-white/5"
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0a0a0c] rounded-full flex items-center justify-center">
+                  {getIconForType(notif.type)}
+                </div>
+              </Link>
+              <div className="flex-1">
+                <p className="text-sm text-white/80">
+                  <Link to={`/profile/${notif.sender?.username}`} className="font-bold text-white hover:underline">
+                    {notif.sender?.profile?.full_name || notif.sender?.username}
+                  </Link>{" "}
+                  {getMessageForType(notif.type)}
+                </p>
+                <p className="text-xs text-white/40 mt-1">
+                  {new Date(notif.created_at).toLocaleDateString()} at {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
