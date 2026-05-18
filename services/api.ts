@@ -42,13 +42,13 @@ apiClient.interceptors.response.use(
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
-          // If refresh fails, fall through to logout
+          // Keep the saved session until the user explicitly logs out.
           console.error("Session refresh failed", refreshError);
         }
       }
     }
 
-    if (isSuspended || isUnauthorized) {
+    if (isSuspended) {
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
@@ -112,23 +112,6 @@ export const api = {
       return res.data;
     },
   },
-  mobile: {
-    getVersionInfo: async (currentVersion?: string) => {
-      const query = currentVersion
-        ? `?current_version=${encodeURIComponent(currentVersion)}`
-        : "";
-      const res = await apiClient.get(`/mobile/version${query}`);
-      return res.data as {
-        latest_version: string;
-        min_supported_version: string;
-        apk_url: string;
-        force_update: boolean;
-        has_update: boolean;
-        current_version?: string | null;
-        release_notes?: string | null;
-      };
-    },
-  },
   auth: {
     login: async (credentials: any) => {
       const formData = new FormData();
@@ -139,7 +122,9 @@ export const api = {
       const accessToken = res.data.access_token;
       const refreshToken = res.data.refresh_token;
       authStorage.setItem('access_token', accessToken);
-      authStorage.setItem('refresh_token', refreshToken);
+      if (refreshToken) {
+        authStorage.setItem('refresh_token', refreshToken);
+      }
       
       const userRes = await apiClient.get('/users/me/');
       const transformedUser = transformUser(userRes.data);
@@ -174,17 +159,34 @@ export const api = {
       const res = await apiClient.post('/auth/refresh', { refresh_token: refreshToken });
       const { access_token, refresh_token } = res.data;
       authStorage.setItem('access_token', access_token);
-      authStorage.setItem('refresh_token', refresh_token);
+      if (refresh_token) {
+        authStorage.setItem('refresh_token', refresh_token);
+      }
       return res.data;
     },
   },
   posts: {
-    getFeed: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
-      const res = await apiClient.get(`/feed/?skip=${pageParam * 10}&limit=10`);
+    getFeed: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
+      const query = new URLSearchParams({
+        skip: String(pageParam * 10),
+        limit: "10",
+      });
+      if (typeof seed === "number") {
+        query.set("seed", seed.toFixed(8));
+      }
+      const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },
-    getReels: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
-      const res = await apiClient.get(`/feed/?skip=${pageParam * 10}&limit=20&reels=true`);
+    getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
+      const query = new URLSearchParams({
+        skip: String(pageParam * 10),
+        limit: "20",
+        reels: "true",
+      });
+      if (typeof seed === "number") {
+        query.set("seed", seed.toFixed(8));
+      }
+      const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },
     create: async (data: any) => {

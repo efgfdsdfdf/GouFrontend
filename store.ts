@@ -14,6 +14,7 @@ export const useAuthStore = create<AuthState>((set) => {
   authStorage.migrateLegacySessionToLocal();
 
   const token = authStorage.getItem('access_token');
+  const refreshToken = authStorage.getItem('refresh_token');
   const userStr = authStorage.getItem('user_data');
   let user = null;
   try {
@@ -25,7 +26,7 @@ export const useAuthStore = create<AuthState>((set) => {
   return {
     user: user,
     token: token,
-    isAuthenticated: !!token,
+    isAuthenticated: !!user && (!!token || !!refreshToken),
     login: (user, token) => {
       authStorage.setItem('access_token', token);
       authStorage.setItem('user_data', JSON.stringify(user));

@@ -1,18 +1,18 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { PostCard } from "../components/feed/PostCard";
 import { StatusCircles } from "../components/feed/StatusCircles";
 import { Skeleton } from "../components/ui/Skeleton";
 import { api } from "../services/api";
 import { Post } from "../types";
-import { useAuthStore } from "../store";
 
 export const Dashboard = () => {
-  const { user: currentUser } = useAuthStore();
+  const [feedSeed, setFeedSeed] = useState(() => Math.random());
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
-      queryKey: ["feed"],
-      queryFn: api.posts.getFeed,
+      queryKey: ["feed", feedSeed],
+      queryFn: ({ pageParam }) => api.posts.getFeed({ pageParam, seed: feedSeed }),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
         return lastPage.length > 0 ? allPages.length : undefined;
@@ -58,7 +58,18 @@ export const Dashboard = () => {
     <div className="max-w-2xl mx-auto w-full pb-24 pt-8">
       {/* Stories Section */}
       <div className="mb-8">
-        <h2 className="font-serif text-3xl mb-4 text-white">Campus stories</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="font-serif text-3xl text-white">Campus stories</h2>
+          <button
+            type="button"
+            onClick={() => setFeedSeed(Math.random())}
+            className="h-10 w-10 rounded-full bg-white/5 border border-white/10 text-white/70 flex items-center justify-center hover:bg-white/10 hover:text-white transition-all active:scale-95"
+            aria-label="Refresh feed"
+            title="Refresh feed"
+          >
+            <RefreshCw size={17} />
+          </button>
+        </div>
         <StatusCircles users={suggestions || []} />
       </div>
 
