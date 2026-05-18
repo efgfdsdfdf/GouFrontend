@@ -28,6 +28,7 @@ import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
 import { useAuthStore } from "./store";
 import { API_URL, api } from "./services/api";
+import { authStorage } from "./utils/persistentStorage";
 import { ToastProvider } from "./components/ui/Toast";
 import { GoUnionLoader } from "./components/ui/GoUnionLoader";
 import { APK_VERSION } from "./release";
@@ -144,6 +145,7 @@ const MobileUpdateModal = ({
               Later
             </button>
           )}
+        </div>
       </div>
     </div>
   );
