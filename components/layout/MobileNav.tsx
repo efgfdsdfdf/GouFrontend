@@ -36,14 +36,14 @@ export const MobileNav = () => {
 
   const NAV_ITEMS = [
     { icon: Home, label: "Feed", path: "/" },
-    { icon: Users, label: "Groups", path: "/groups" },
+    { icon: Compass, label: "Discover", path: "/discover" },
     { icon: MessageSquare, label: "Chat", path: "/messages" },
     { icon: User, label: "Profile", path: `/profile/${user?.username}` },
   ];
 
   const OTHER_ITEMS = [
     { icon: Bell, label: "Alerts", path: "/notifications", badge: unreadCount },
-    { icon: Compass, label: "Discover", path: "/discover" },
+    { icon: Users, label: "Groups", path: "/groups" },
     { icon: GraduationCap, label: "Alumni", path: "/alumni" },
     ...(user?.role === "admin" || user?.role === "moderator" 
       ? [{ icon: ShieldCheck, label: "Admin Panel", path: "/admin" }] 
@@ -54,7 +54,7 @@ export const MobileNav = () => {
   return (
     <>
       <div className={`
-        md:hidden fixed left-1/2 -translate-x-1/2 w-[95%] max-w-md h-16 bg-black/60 backdrop-blur-2xl border border-white/10 z-[160] flex items-center justify-around px-2 rounded-2xl shadow-2xl transition-all duration-500 top-20
+        md:hidden fixed bottom-0 left-0 w-full h-[calc(4rem+env(safe-area-inset-bottom))] pb-[env(safe-area-inset-bottom)] bg-[#050505]/95 backdrop-blur-2xl border-t border-white/5 z-[160] flex items-center justify-around px-2
       `}>
         {NAV_ITEMS.map((item) => (
           <NavLink
