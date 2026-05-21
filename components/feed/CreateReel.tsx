@@ -69,16 +69,16 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-[#0a0a0c] border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md max-h-[90dvh] flex flex-col bg-[#0a0a0c] border border-white/10 rounded-[3rem] shadow-2xl overflow-hidden"
           >
-            <div className="p-6 flex items-center justify-between border-b border-white/5">
+            <div className="p-6 flex items-center justify-between border-b border-white/5 shrink-0">
               <h3 className="text-xl font-black text-white tracking-tighter">Create Reel</h3>
               <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-zinc-500 transition-colors">
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 overflow-y-auto hide-scrollbar flex-1">
               {!preview ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
