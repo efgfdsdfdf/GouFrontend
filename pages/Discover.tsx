@@ -95,21 +95,6 @@ export const Discover = () => {
   const handleShare = async (reel: Post) => {
     try {
       if (navigator.share) {
-        try {
-          const response = await fetch(reel.imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: "GoUnion Reel",
-              text: reel.content || `Check out this reel from @${reel.author.username}`,
-              files: [file]
-            });
-            return;
-          }
-        } catch (e) {
-          console.error("Failed to share file directly:", e);
-        }
         await navigator.share({
           title: "GoUnion Reel",
           text: reel.content || `Check out this reel from @${reel.author.username}`,

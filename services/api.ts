@@ -166,26 +166,20 @@ export const api = {
     },
   },
   posts: {
-    getFeed: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
+    getFeed: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
       const query = new URLSearchParams({
         skip: String(pageParam * 10),
         limit: "10",
       });
-      if (typeof seed === "number") {
-        query.set("seed", seed.toFixed(8));
-      }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },
-    getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
+    getReels: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
       const query = new URLSearchParams({
         skip: String(pageParam * 10),
         limit: "20",
         reels: "true",
       });
-      if (typeof seed === "number") {
-        query.set("seed", seed.toFixed(8));
-      }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },

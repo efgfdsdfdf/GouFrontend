@@ -43,7 +43,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-      className="absolute top-full right-0 mt-4 w-96 bg-[#141417]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[110]"
+      className="absolute top-full right-[-10px] md:right-0 mt-4 w-[calc(100vw-2rem)] sm:w-96 max-w-[380px] bg-[#141417]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[110]"
     >
       <div className="p-6 border-b border-white/5 flex items-center justify-between">
         <h3 className="text-white font-black text-xs uppercase tracking-widest">
