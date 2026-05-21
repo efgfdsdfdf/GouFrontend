@@ -171,6 +171,14 @@ const AppRoutes = () => {
   }
 
   if (!isAuthenticated && !PUBLIC_ROUTES.includes(location.pathname)) {
+    // Check if it's a password reset link hitting the root or an unknown URL
+    const hasResetToken = window.location.hash.includes("type=recovery") || 
+                          window.location.hash.includes("access_token=") || 
+                          window.location.search.includes("token=");
+    
+    if (hasResetToken) {
+      return <Navigate to={`/reset-password${window.location.search}${window.location.hash}`} replace />;
+    }
     return <Navigate to="/login" replace />;
   }
 
