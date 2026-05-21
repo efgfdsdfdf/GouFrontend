@@ -51,12 +51,6 @@ export const TopNav = () => {
     <header className="flex sticky top-0 w-full h-16 md:h-20 bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-white/5 z-[100]">
       <div className="max-w-[1600px] mx-auto h-full w-full flex items-center justify-between px-4 md:px-8 relative">
         <div className="flex items-center gap-4">
-          <button
-            className="md:hidden p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-            onClick={toggleSidebar}
-          >
-            <Menu size={24} />
-          </button>
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 md:w-11 md:h-11 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 transition-transform group-hover:scale-105">
               <span className="font-black text-black text-xl md:text-2xl">U</span>
@@ -67,7 +61,7 @@ export const TopNav = () => {
           </Link>
         </div>
 
-        <div className="flex-1 max-w-lg mx-4 md:mx-12 hidden md:block" ref={searchRef}>
+        <div className="flex-1 max-w-lg mx-2 md:mx-12" ref={searchRef}>
           <div className="relative group">
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-primary transition-colors"
