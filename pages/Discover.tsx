@@ -139,6 +139,34 @@ export const Discover = () => {
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="px-10 py-4 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
+            >
+              Create First Reel
+            </button>
+          </div>
+        ) : (
+          reels.map((reel) => (
+            <section
+              key={reel.id}
+              className="snap-start h-full relative bg-black flex items-center justify-center overflow-hidden"
+            >
+              {/* Background Blur for non-16:9 videos */}
+              <div 
+                className="absolute inset-0 bg-cover bg-center opacity-30 blur-3xl scale-110 pointer-events-none"
+                style={{ backgroundImage: `url(${reel.imageUrl})` }}
+              />
+
+              <video
+                ref={(el) => {
+                  videoRefs.current[reel.id] = el;
+                }}
+                src={reel.imageUrl}
+                className="relative z-10 w-full h-full object-cover md:object-contain bg-black shadow-2xl"
+                loop
+                muted={isMuted}
+                playsInline
+                preload="auto"
+                onClick={(e) => {
+                  const video = e.currentTarget;
                   if (video.paused) void video.play();
                   else video.pause();
                 }}

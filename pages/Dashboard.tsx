@@ -84,39 +84,6 @@ export const Dashboard = () => {
       observer.disconnect();
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-        return lastPage.length > 0 ? allPages.length : undefined;
-      },
-    });
-
-  const { data: suggestions } = useQuery({
-    queryKey: ["suggestions"],
-    queryFn: api.profiles.getSuggestions,
-    staleTime: 1000 * 60 * 5,
-  });
-
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { threshold: 0.1, rootMargin: "100px" },
-    );
-
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
-
-    return () => {
-      if (loadMoreRef.current) {
-        observer.unobserve(loadMoreRef.current);
-      }
-      observer.disconnect();
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const uniquePosts = Array.from(
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
