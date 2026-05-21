@@ -55,7 +55,7 @@ export const Dashboard = () => {
   const posts = uniquePosts;
 
   return (
-    <div className="max-w-2xl mx-auto w-full pb-24 pt-8">
+    <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4">
       {/* Stories Section */}
       <div className="mb-8">
         <div className="mb-4 flex items-center justify-between gap-4">
