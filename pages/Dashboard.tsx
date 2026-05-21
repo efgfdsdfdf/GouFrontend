@@ -24,14 +24,14 @@ export const Dashboard = () => {
   const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
     if (window.scrollY === 0 && touchStartY.current > 0) {
       const y = e.touches[0].clientY - touchStartY.current;
-      if (y > 0 && y < 150) {
+      if (y > 0) {
         setPullY(y);
       }
     }
   };
 
   const handleTouchEnd = async () => {
-    if (pullY > 60) {
+    if (pullY > 140) {
       setIsRefreshing(true);
       setFeedSeed(Math.random());
       await queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -108,7 +108,7 @@ export const Dashboard = () => {
         />
       </div>
       {/* Stories Section */}
-      <div className="mb-8">
+      <div className="mb-2">
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 className="font-serif text-3xl text-white">Campus stories</h2>
           <button

@@ -38,7 +38,7 @@ export const MobileNav = () => {
     { icon: Home, label: "Feed", path: "/" },
     { icon: Compass, label: "Discover", path: "/discover" },
     { icon: MessageSquare, label: "Chat", path: "/messages" },
-    { icon: User, label: "Profile", path: `/profile/${user?.username}` },
+    { icon: User, label: "Profile", path: user?.username ? `/profile/${user.username}` : "/" },
   ];
 
   const OTHER_ITEMS = [

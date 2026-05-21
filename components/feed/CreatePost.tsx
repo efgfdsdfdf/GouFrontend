@@ -101,7 +101,7 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept="image/*,video/*"
+                accept="image/*"
               />
               <button
                 type="button"
@@ -111,14 +111,7 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
               >
                 <ImageIcon className="w-5 h-5" />
               </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                title="Video"
-              >
-                <Video className="w-5 h-5" />
-              </button>
+              {/* Video upload removed from Feed to keep Discover and Feed separate */}
               <button
                 type="button"
                 className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors"

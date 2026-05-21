@@ -111,7 +111,7 @@ export const Sidebar = () => {
         })}
 
         <NavLink
-          to={`/profile/${user?.username}`}
+          to={user?.username ? `/profile/${user.username}` : "/"}
           className={({ isActive }) => `
             flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group mt-1
             ${

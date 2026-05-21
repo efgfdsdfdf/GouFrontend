@@ -93,18 +93,31 @@ export const Discover = () => {
   }, [data]);
 
   const handleShare = async (reel: Post) => {
-    const shareData = {
-      title: "GoUnion Reel",
-      text: reel.content || `Check out this reel from @${reel.author.username}`,
-      url: window.location.origin + `/profile/${reel.author.username}`,
-    };
-
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
+        try {
+          const response = await fetch(reel.imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'video.mp4', { type: 'video/mp4' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: "GoUnion Reel",
+              text: reel.content || `Check out this reel from @${reel.author.username}`,
+              files: [file]
+            });
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to share file directly:", e);
+        }
+        await navigator.share({
+          title: "GoUnion Reel",
+          text: reel.content || `Check out this reel from @${reel.author.username}`,
+          url: reel.imageUrl
+        });
       } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("Link copied to clipboard!");
+        await navigator.clipboard.writeText(reel.imageUrl);
+        alert("Video link copied to clipboard!");
       }
     } catch (err) {
       console.error("Error sharing:", err);
@@ -126,9 +139,9 @@ export const Discover = () => {
 
   return (
     <div className="fixed inset-0 md:pl-64 lg:pr-80 bg-black overflow-hidden z-0">
-      <div className="h-full overflow-y-auto snap-y snap-mandatory hide-scrollbar">
+      <div className="h-[100dvh] overflow-y-auto snap-y snap-mandatory hide-scrollbar">
         {reels.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
+          <div className="h-[100dvh] flex flex-col items-center justify-center text-center p-8">
             <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10">
               <Camera className="w-12 h-12 text-white/20" />
             </div>
@@ -147,7 +160,7 @@ export const Discover = () => {
           reels.map((reel) => (
             <section
               key={reel.id}
-              className="snap-start h-full relative bg-black flex items-center justify-center overflow-hidden"
+              className="snap-start snap-always h-[100dvh] w-full relative bg-black flex items-center justify-center overflow-hidden"
             >
               {/* Background Blur for non-16:9 videos */}
               <div 
@@ -160,7 +173,7 @@ export const Discover = () => {
                   videoRefs.current[reel.id] = el;
                 }}
                 src={reel.imageUrl}
-                className="relative z-10 w-full h-full object-cover md:object-contain bg-black shadow-2xl"
+                className="relative z-10 w-full h-full object-cover bg-black shadow-2xl"
                 loop
                 muted={isMuted}
                 playsInline
