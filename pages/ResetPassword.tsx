@@ -15,10 +15,10 @@ import { api } from "../services/api";
  * We support both formats.
  */
 function getTokenFromUrl(): string | null {
-  // Preferred format: /reset-password#access_token=...
-  if (window.location.hash.startsWith("#access_token=")) {
+  // Preferred format: /reset-password#access_token=... or /reset-password#token=...
+  if (window.location.hash.startsWith("#access_token=") || window.location.hash.startsWith("#token=")) {
     const params = new URLSearchParams(window.location.hash.slice(1));
-    return params.get("access_token");
+    return params.get("access_token") || params.get("token");
   }
 
   // Legacy format: #/reset-password#access_token=...
@@ -26,12 +26,12 @@ function getTokenFromUrl(): string | null {
   const secondHash = fullHash.indexOf("#", 1);
   if (secondHash !== -1) {
     const params = new URLSearchParams(fullHash.slice(secondHash + 1));
-    return params.get("access_token");
+    return params.get("access_token") || params.get("token");
   }
 
   // Final fallback in case token is provided via query params.
   const queryParams = new URLSearchParams(window.location.search);
-  return queryParams.get("access_token");
+  return queryParams.get("access_token") || queryParams.get("token");
 }
 
 export const ResetPassword = () => {

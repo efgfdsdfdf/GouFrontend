@@ -10,6 +10,8 @@ import {
   Zap,
   Sparkles,
   ChevronLeft,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useAuthStore } from "../store";
 import { api } from "../services/api";
@@ -151,14 +153,23 @@ export const Login = () => {
                     </Link>
                   )}
                 </div>
-                <input
-                  type="password"
-                  required
-                  className="w-full bg-white/5 border border-white/5 rounded-xl py-4 px-6 text-white placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-all font-medium"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="w-full bg-white/5 border border-white/5 rounded-xl py-4 px-6 pr-12 text-white placeholder:text-zinc-700 focus:outline-none focus:border-primary/30 transition-all font-medium"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
