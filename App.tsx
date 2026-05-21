@@ -51,7 +51,7 @@ const AppLayout = ({ children }: { children?: React.ReactNode }) => {
         <div className="fixed top-0 right-0 left-0 md:left-64 lg:right-80 z-[100]">
           <TopNav />
         </div>
-        <main className={`flex-1 overflow-y-auto hide-scrollbar md:pl-64 lg:pr-80 ${isDiscover ? 'pb-0' : 'pb-6'} md:pb-0 pt-40 md:pt-16`}>
+        <main className={`flex-1 overflow-y-auto hide-scrollbar md:pl-64 lg:pr-80 ${isDiscover ? 'pb-0' : 'pb-6'} md:pb-0 pt-16`}>
           <div className="px-4 py-6 md:px-8 max-w-5xl mx-auto">
             {children}
           </div>

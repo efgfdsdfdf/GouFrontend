@@ -138,8 +138,8 @@ export const Discover = () => {
   }
 
   return (
-    <div className="fixed inset-0 md:pl-64 lg:pr-80 bg-black overflow-hidden z-0">
-      <div className="h-[100dvh] overflow-y-auto snap-y snap-mandatory hide-scrollbar">
+    <div className="fixed inset-0 md:pl-64 lg:pr-80 bg-black overflow-hidden z-0 pt-16 md:pt-20 pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+      <div className="h-full overflow-y-auto snap-y snap-mandatory hide-scrollbar">
         {reels.length === 0 ? (
           <div className="h-[100dvh] flex flex-col items-center justify-center text-center p-8">
             <div className="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-8 border border-white/10">
@@ -160,7 +160,7 @@ export const Discover = () => {
           reels.map((reel) => (
             <section
               key={reel.id}
-              className="snap-start snap-always h-[100dvh] w-full relative bg-black flex items-center justify-center overflow-hidden"
+              className="snap-start snap-always h-full w-full relative bg-black flex items-center justify-center overflow-hidden"
             >
               {/* Background Blur for non-16:9 videos */}
               <div 
