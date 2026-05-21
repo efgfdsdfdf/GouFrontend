@@ -170,7 +170,6 @@ export const api = {
       const query = new URLSearchParams({
         skip: String(pageParam * 10),
         limit: "10",
-        reels: "false",
       });
       if (typeof seed === "number") {
         query.set("seed", seed.toFixed(8));

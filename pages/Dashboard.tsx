@@ -7,6 +7,11 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { api } from "../services/api";
 import { Post } from "../types";
 
+const isVideoUrl = (url?: string) => {
+  if (!url) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|m3u8)(\?|$)/i.test(url);
+};
+
 export const Dashboard = () => {
   const queryClient = useQueryClient();
   const [feedSeed, setFeedSeed] = useState(() => Math.random());
@@ -88,7 +93,7 @@ export const Dashboard = () => {
   const uniquePosts = Array.from(
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
   );
-  const posts = uniquePosts;
+  const posts = uniquePosts.filter((post) => !isVideoUrl(post.imageUrl));
 
   return (
     <div 
