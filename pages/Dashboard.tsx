@@ -7,11 +7,6 @@ import { Skeleton } from "../components/ui/Skeleton";
 import { api } from "../services/api";
 import { Post } from "../types";
 
-const isVideoUrl = (url?: string) => {
-  if (!url) return false;
-  return /\.(mp4|webm|mov|m4v|avi|mkv|m3u8)(\?|$)/i.test(url);
-};
-
 export const Dashboard = () => {
   const queryClient = useQueryClient();
   const [feedSeed, setFeedSeed] = useState(() => Math.random());
@@ -49,6 +44,21 @@ export const Dashboard = () => {
     }
     touchStartY.current = 0;
   };
+
+  const refreshFeed = async () => {
+    setIsRefreshing(true);
+    setFeedSeed(Math.random());
+    await queryClient.invalidateQueries({ queryKey: ["feed"] });
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
+
+  useEffect(() => {
+    const handleExternalRefresh = () => {
+      void refreshFeed();
+    };
+    window.addEventListener("gounion-refresh-feed", handleExternalRefresh);
+    return () => window.removeEventListener("gounion-refresh-feed", handleExternalRefresh);
+  }, []);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
@@ -93,7 +103,7 @@ export const Dashboard = () => {
   const uniquePosts = Array.from(
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
   );
-  const posts = uniquePosts.filter((post) => !isVideoUrl(post.imageUrl));
+  const posts = uniquePosts.filter((post) => !post.isReel);
 
   return (
     <div 
@@ -118,10 +128,7 @@ export const Dashboard = () => {
           <h2 className="font-serif text-3xl text-white">Campus stories</h2>
           <button
             type="button"
-            onClick={() => {
-              setFeedSeed(Math.random());
-              queryClient.invalidateQueries({ queryKey: ["feed"] });
-            }}
+            onClick={refreshFeed}
             className="hidden md:flex h-10 w-10 rounded-full bg-white/5 border border-white/10 text-white/70 items-center justify-center hover:bg-white/10 hover:text-white transition-all active:scale-95"
             aria-label="Refresh feed"
             title="Refresh feed"

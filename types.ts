@@ -19,6 +19,8 @@ export interface Post {
   author: User;
   content: string;
   imageUrl?: string;
+  mediaType?: 'text' | 'image' | 'video';
+  isReel?: boolean;
   likes: number;
   comments: number;
   timestamp: string;

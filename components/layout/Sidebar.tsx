@@ -78,6 +78,13 @@ export const Sidebar = () => {
               onClick={(e) => {
                 if (isComingSoon) {
                   e.preventDefault();
+                  return;
+                }
+                if (location.pathname === "/" && item.path === "/") {
+                  window.dispatchEvent(new Event("gounion-refresh-feed"));
+                }
+                if (location.pathname === "/discover" && item.path === "/discover") {
+                  window.dispatchEvent(new Event("gounion-refresh-discover"));
                 }
               }}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group

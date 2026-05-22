@@ -34,13 +34,14 @@ export const Discover = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
+  const [discoverSeed, setDiscoverSeed] = useState(() => Math.random());
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
-      queryKey: ["discover-reels"],
-      queryFn: api.posts.getReels,
+      queryKey: ["discover-reels", discoverSeed],
+      queryFn: ({ pageParam }) => api.posts.getReels({ pageParam, seed: discoverSeed }),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) =>
         lastPage.length > 0 ? allPages.length : undefined,
@@ -53,6 +54,16 @@ export const Discover = () => {
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
     },
   });
+
+  useEffect(() => {
+    const handleExternalRefresh = () => {
+      setDiscoverSeed(Math.random());
+      queryClient.removeQueries({ queryKey: ["discover-reels"] });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    window.addEventListener("gounion-refresh-discover", handleExternalRefresh);
+    return () => window.removeEventListener("gounion-refresh-discover", handleExternalRefresh);
+  }, [queryClient]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -158,7 +169,7 @@ export const Discover = () => {
                   videoRefs.current[reel.id] = el;
                 }}
                 src={reel.imageUrl}
-                className="relative z-10 w-full h-full object-cover bg-black shadow-2xl"
+                className="relative z-10 h-full w-full max-h-full max-w-full object-contain bg-black shadow-2xl"
                 loop
                 muted={isMuted}
                 playsInline
@@ -253,7 +264,7 @@ export const Discover = () => {
                   </Link>
                   
                   <p className="text-white/90 text-[13px] leading-relaxed mb-4 font-medium line-clamp-2">
-                    {reel.content || "Experience the energy of GoUnion campus life! 🎓✨"}
+                    {reel.content || "Experience the energy of GoUnion campus life."}
                   </p>
 
                   <div className="flex items-center gap-2 text-white/50 bg-white/5 w-fit px-3 py-1.5 rounded-full border border-white/5">
@@ -273,7 +284,11 @@ export const Discover = () => {
       {/* Modals & Overlays */}
       <CreateReel 
         isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
+        onClose={() => {
+          setIsCreateModalOpen(false);
+          setDiscoverSeed(Math.random());
+          queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+        }} 
       />
 
       {/* Comment Drawer */}

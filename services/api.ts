@@ -77,21 +77,40 @@ const isVideoMedia = (url?: string | null) => {
   return /\.(mp4|webm|mov|m4v|avi|mkv|m3u8)(\?|$)/i.test(url);
 };
 
+const seededShuffle = <T extends { id?: string }>(items: T[], seed = Math.random()) => {
+  const hash = (value: string) => {
+    let h = 2166136261;
+    for (let i = 0; i < value.length; i += 1) {
+      h ^= value.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  };
+
+  return [...items].sort((a, b) => {
+    const aScore = hash(`${seed}:${a.id || ''}`);
+    const bScore = hash(`${seed}:${b.id || ''}`);
+    return aScore - bScore;
+  });
+};
+
 // Helper to transform user data
 export const transformUser = (user: any) => {
+  const profile = user.profile || user;
+  const username = user.username || profile.username || 'gounion-user';
   return {
     id: user.id,
-    username: user.username,
-    fullName: user.profile?.full_name || user.username,
+    username,
+    fullName: profile.full_name || user.full_name || user.name || username,
     avatarUrl:
-      getFullUrl(user.profile?.profile_picture) ||
-      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
-    university: user.profile?.university || 'University Student',
-    followers: 0,
-    following: 0,
-    bio: user.profile?.bio || '',
-    coverUrl: getFullUrl(user.profile?.cover_photo) || '',
-    isFollowing: false,
+      getFullUrl(profile.profile_picture || user.profile_picture || user.avatarUrl) ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+    university: profile.university || user.university || 'University Student',
+    followers: user.followers_count ?? user.followers ?? 0,
+    following: user.following_count ?? user.following ?? 0,
+    bio: profile.bio || user.bio || '',
+    coverUrl: getFullUrl(profile.cover_photo || user.cover_photo || user.coverUrl) || '',
+    isFollowing: user.is_following ?? user.isFollowing ?? false,
     role: user.role || 'user',
     isActive: user.is_active ?? true,
     totalLikes: user.total_likes ?? 0,
@@ -104,12 +123,15 @@ const transformPost = (post: any) => {
   const currentUserId = user ? user.id : null;
 
   const rawMedia = post.video || post.image;
+  const isReel = Boolean(post.video);
 
   return {
     id: post.id.toString(),
     author: transformUser(post.user),
     content: post.caption || '',
     imageUrl: getFullUrl(rawMedia),
+    mediaType: isReel ? 'video' : post.image ? 'image' : 'text',
+    isReel,
     likes: post.likes_count || 0,
     comments: post.comments?.length || 0,
     timestamp: new Date(post.created_at).toLocaleDateString(),
@@ -248,7 +270,10 @@ export const api = {
         query.set('seed', seed.toFixed(8));
       }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
-      return res.data.map(transformPost).filter((post: any) => !isVideoMedia(post.imageUrl));
+      const posts = res.data
+        .map(transformPost)
+        .filter((post: any) => !post.isReel && !isVideoMedia(post.imageUrl));
+      return seededShuffle(posts, seed);
     },
     getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
       const query = new URLSearchParams({
@@ -260,7 +285,10 @@ export const api = {
         query.set('seed', seed.toFixed(8));
       }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
-      return res.data.map(transformPost).filter((post: any) => isVideoMedia(post.imageUrl));
+      const reels = res.data
+        .map(transformPost)
+        .filter((post: any) => post.isReel || isVideoMedia(post.imageUrl));
+      return seededShuffle(reels, seed);
     },
     create: async (data: any) => {
       let mediaUrl = null;
@@ -354,23 +382,30 @@ export const api = {
         const res = await apiClient.get(`/profiles/${username}`);
         return transformProfile(res.data, username);
       } catch (profileError) {
-        const res = await apiClient.get(`/search/users?q=${encodeURIComponent(username)}`);
-        const match = res.data.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
-        if (!match) throw profileError;
-        return transformProfile(match, username);
+        try {
+          const res = await apiClient.get(`/search/users?q=${encodeURIComponent(username)}`);
+          const match = res.data.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
+          if (!match) throw profileError;
+          return transformProfile(match, username);
+        } catch {
+          const suggestions = await api.profiles.getSuggestions();
+          const match = suggestions.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
+          if (!match) throw profileError;
+          return transformProfile(match, username);
+        }
       }
     },
     getPosts: async (username: string) => {
       const profile = await api.profiles.get(username);
       const userId = profile.id;
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
-      return res.data.map(transformPost).filter((post: any) => !isVideoMedia(post.imageUrl));
+      return res.data.map(transformPost).filter((post: any) => !post.isReel && !isVideoMedia(post.imageUrl));
     },
     getReels: async (username: string) => {
       const profile = await api.profiles.get(username);
       const userId = profile.id;
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
-      return res.data.map(transformPost).filter((post: any) => isVideoMedia(post.imageUrl));
+      return res.data.map(transformPost).filter((post: any) => post.isReel || isVideoMedia(post.imageUrl));
     },
     update: async (data: any) => {
       let profile_picture = data.profile_picture;
@@ -615,14 +650,31 @@ export const api = {
       }
 
       const res = await apiClient.post(`/conversations/${conversationId}/messages/`, {
+        conversation_id: Number(conversationId),
         content,
         image_url: imageUrl,
         video_url: videoUrl,
       });
-      return res.data;
+      const m = res.data;
+      return {
+        id: m.id.toString(),
+        content: m.content,
+        imageUrl: getFullUrl(m.image_url),
+        videoUrl: getFullUrl(m.video_url),
+        senderId: m.sender_id,
+        timestamp: new Date(m.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isRead: m.is_read,
+      };
     },
     createConversation: async (participantIds: string[], name?: string) => {
-      const res = await apiClient.post('/conversations/', { participant_ids: participantIds, name });
+      const currentUserId = authStorage.getItem('user_id');
+      const participant_ids = Array.from(
+        new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(String)),
+      );
+      const res = await apiClient.post('/conversations/', { participant_ids, name });
       return res.data;
     },
   },

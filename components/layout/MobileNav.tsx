@@ -60,6 +60,14 @@ export const MobileNav = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={() => {
+              if (location.pathname === "/" && item.path === "/") {
+                window.dispatchEvent(new Event("gounion-refresh-feed"));
+              }
+              if (location.pathname === "/discover" && item.path === "/discover") {
+                window.dispatchEvent(new Event("gounion-refresh-discover"));
+              }
+            }}
             className={({ isActive }) => `
               relative flex flex-col items-center justify-center h-full flex-1 transition-all duration-300
               ${isActive ? "text-violet-400" : "text-zinc-500 hover:text-zinc-300"}

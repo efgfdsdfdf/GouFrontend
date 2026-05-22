@@ -9,7 +9,6 @@ import {
   Paperclip,
   Search,
   Send,
-  Smile,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +28,7 @@ export const Messages = () => {
   const [searchText, setSearchText] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 768px)").matches);
 
   const { data: chats = [] } = useQuery({
     queryKey: ["chats"],
@@ -46,9 +46,17 @@ export const Messages = () => {
   });
 
   useEffect(() => {
-    if (selectedChatId || !chats.length) return;
+    if (!isDesktop || selectedChatId || !chats.length) return;
     setSelectedChatId(chats[0].id);
-  }, [chats, selectedChatId]);
+  }, [chats, isDesktop, selectedChatId]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)");
+    const handleChange = () => setIsDesktop(media.matches);
+    handleChange();
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, []);
 
   useEffect(() => {
     if (!userIdFromQuery || !chats) return;
@@ -179,43 +187,43 @@ export const Messages = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-[#0b141a] text-white overflow-hidden">
+    <div className="h-screen w-full bg-[#030303] text-white overflow-hidden">
       <div className="h-full flex">
         <aside
-          className={`w-full md:w-[390px] md:min-w-[390px] bg-[#111b21] border-r border-black/40 flex-col ${
+          className={`w-full md:w-[390px] md:min-w-[390px] bg-[#050505]/95 border-r border-white/10 flex-col ${
             selectedChatId ? "hidden md:flex" : "flex"
           }`}
         >
-          <div className="h-16 px-4 bg-[#202c33] flex items-center justify-between">
+          <div className="h-16 px-4 bg-[#0a0a0c]/95 border-b border-white/5 flex items-center justify-between">
             <Link to="/" className="flex items-center gap-3 min-w-0">
-              <div className="h-10 w-10 rounded-full bg-primary text-black flex items-center justify-center font-black">
+              <div className="h-10 w-10 rounded-xl bg-primary text-black flex items-center justify-center font-black shadow-lg shadow-primary/20">
                 G
               </div>
               <div className="min-w-0">
                 <p className="font-semibold leading-none">GoUnion Chats</p>
-                <p className="text-xs text-[#8696a0] mt-1">Messages stay in sync live</p>
+                <p className="text-xs text-white/40 mt-1">Messages stay in sync live</p>
               </div>
             </Link>
-            <button className="h-10 w-10 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center">
+            <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
               <MoreVertical size={20} />
             </button>
           </div>
 
-          <div className="p-3 bg-[#111b21]">
-            <div className="h-10 rounded-lg bg-[#202c33] flex items-center gap-3 px-4">
-              <Search size={18} className="text-[#8696a0]" />
+          <div className="p-3 bg-[#050505]">
+            <div className="h-10 rounded-xl bg-white/5 border border-white/10 flex items-center gap-3 px-4">
+              <Search size={18} className="text-white/40" />
               <input
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Search or start new chat"
-                className="flex-1 bg-transparent text-sm text-white placeholder:text-[#8696a0] outline-none"
+                className="flex-1 bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
               />
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {filteredChats.length === 0 ? (
-              <div className="px-8 py-20 text-center text-[#8696a0] text-sm">
+              <div className="px-8 py-20 text-center text-white/40 text-sm">
                 No chats yet. Open a profile and tap the message button to start one.
               </div>
             ) : (
@@ -224,23 +232,23 @@ export const Messages = () => {
                   key={chat.id}
                   onClick={() => setSelectedChatId(chat.id)}
                   className={`w-full h-[72px] px-4 flex items-center gap-3 text-left border-b border-white/5 transition-colors ${
-                    selectedChatId === chat.id ? "bg-[#2a3942]" : "hover:bg-[#202c33]"
+                    selectedChatId === chat.id ? "bg-white/10" : "hover:bg-white/5"
                   }`}
                 >
                   <img
                     src={chat.partner.avatarUrl || `https://ui-avatars.com/api/?name=${chat.partner.fullName}`}
                     alt={chat.partner.fullName}
-                    className="h-12 w-12 rounded-full object-cover bg-[#2a3942]"
+                    className="h-12 w-12 rounded-full object-cover bg-white/10 border border-white/10"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-[15px] text-[#e9edef] truncate">{chat.partner.fullName}</p>
-                      <span className="text-[11px] text-[#8696a0] shrink-0">{chat.timestamp}</span>
+                      <p className="text-[15px] text-white truncate">{chat.partner.fullName}</p>
+                      <span className="text-[11px] text-white/35 shrink-0">{chat.timestamp}</span>
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-3">
-                      <p className="text-sm text-[#8696a0] truncate">{chat.lastMessage}</p>
+                      <p className="text-sm text-white/45 truncate">{chat.lastMessage}</p>
                       {chat.unreadCount > 0 && (
-                        <span className="h-5 min-w-5 rounded-full bg-[#00a884] px-1.5 text-[10px] text-black font-bold flex items-center justify-center">
+                        <span className="h-5 min-w-5 rounded-full bg-primary px-1.5 text-[10px] text-black font-bold flex items-center justify-center">
                           {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
                         </span>
                       )}
@@ -252,13 +260,13 @@ export const Messages = () => {
           </div>
         </aside>
 
-        <section className={`flex-1 bg-[#0b141a] flex-col ${selectedChatId ? "flex" : "hidden md:flex"}`}>
+        <section className={`flex-1 bg-[#030303] flex-col ${selectedChatId ? "flex" : "hidden md:flex"}`}>
           {selectedChat ? (
             <>
-              <header className="h-16 px-3 md:px-5 bg-[#202c33] flex items-center gap-3 border-b border-black/20">
+              <header className="h-16 px-3 md:px-5 bg-[#0a0a0c]/95 flex items-center gap-3 border-b border-white/5">
                 <button
                   onClick={() => setSelectedChatId(null)}
-                  className="md:hidden h-10 w-10 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center"
+                  className="md:hidden h-10 w-10 rounded-xl text-white/60 hover:text-white hover:bg-white/5 flex items-center justify-center"
                   aria-label="Back to chats"
                 >
                   <ArrowLeft size={21} />
@@ -266,22 +274,22 @@ export const Messages = () => {
                 <img
                   src={selectedChat.partner.avatarUrl}
                   alt={selectedChat.partner.fullName}
-                  className="h-10 w-10 rounded-full object-cover bg-[#2a3942]"
+                  className="h-10 w-10 rounded-full object-cover bg-white/10 border border-white/10"
                 />
                 <Link to={`/profile/${selectedChat.partner.username}`} className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium text-[#e9edef] truncate">{selectedChat.partner.fullName}</p>
-                  <p className="text-xs text-[#8696a0] truncate">tap for profile</p>
+                  <p className="text-[15px] font-medium text-white truncate">{selectedChat.partner.fullName}</p>
+                  <p className="text-xs text-white/40 truncate">tap for profile</p>
                 </Link>
-                <button className="h-10 w-10 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center">
+                <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
                   <Search size={20} />
                 </button>
-                <button className="h-10 w-10 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center">
+                <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
                   <MoreVertical size={20} />
                 </button>
               </header>
 
               <div className="relative flex-1 overflow-y-auto px-3 md:px-10 py-6">
-                <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[radial-gradient(circle_at_1px_1px,#fff_1px,transparent_0)] [background-size:24px_24px]" />
+                <div className="absolute inset-0 opacity-60 pointer-events-none bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.05),transparent_25%),radial-gradient(circle_at_85%_30%,rgba(196,255,14,0.04),transparent_22%)]" />
                 <div className="relative space-y-2">
                   <AnimatePresence mode="popLayout">
                     {messages.map((msg: any) => {
@@ -294,8 +302,8 @@ export const Messages = () => {
                           className={`flex ${mine ? "justify-end" : "justify-start"}`}
                         >
                           <div
-                            className={`max-w-[82%] sm:max-w-[70%] rounded-lg px-2 py-1 shadow-md ${
-                              mine ? "bg-[#005c4b] text-[#e9edef]" : "bg-[#202c33] text-[#e9edef]"
+                            className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-md border ${
+                              mine ? "bg-primary text-black border-primary/50" : "bg-white/[0.08] text-white border-white/10"
                             }`}
                           >
                             {msg.imageUrl && (
@@ -306,8 +314,8 @@ export const Messages = () => {
                             )}
                             {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
                             <div className="flex items-center justify-end gap-1 pl-10 mt-0.5">
-                              <span className="text-[10px] text-[#aebac1]">{msg.timestamp}</span>
-                              {mine && <CheckCheck size={14} className={msg.isRead ? "text-sky-300" : "text-[#aebac1]"} />}
+                              <span className={`text-[10px] ${mine ? "text-black/55" : "text-white/45"}`}>{msg.timestamp}</span>
+                              {mine && <CheckCheck size={14} className={msg.isRead ? "text-black" : "text-black/55"} />}
                             </div>
                           </div>
                         </motion.div>
@@ -318,7 +326,7 @@ export const Messages = () => {
                 </div>
               </div>
 
-              <footer className="bg-[#202c33] px-3 py-2">
+              <footer className="bg-[#0a0a0c]/95 border-t border-white/5 px-3 py-2">
                 {attachmentPreview && (
                   <div className="mx-2 mb-2 w-fit relative">
                     {attachment?.type.startsWith("video/") ? (
@@ -335,12 +343,9 @@ export const Messages = () => {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <button className="h-11 w-11 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center">
-                    <Smile size={22} />
-                  </button>
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center"
+                    className="h-11 w-11 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center"
                   >
                     <Paperclip size={22} />
                   </button>
@@ -353,7 +358,7 @@ export const Messages = () => {
                   />
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-full text-[#aebac1] hover:bg-white/5 flex items-center justify-center"
+                    className="h-11 w-11 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center"
                   >
                     <ImageIcon size={21} />
                   </button>
@@ -363,12 +368,12 @@ export const Messages = () => {
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder="Type a message"
-                    className="h-11 flex-1 rounded-lg bg-[#2a3942] px-4 text-[15px] text-[#e9edef] placeholder:text-[#8696a0] outline-none"
+                    className="h-11 min-w-0 flex-1 rounded-xl bg-white/5 border border-white/10 px-4 text-[15px] text-white placeholder:text-white/35 outline-none focus:border-primary/40"
                   />
                   <button
                     onClick={handleSend}
                     disabled={sendMessageMutation.isPending || (!messageText.trim() && !attachment)}
-                    className="h-11 w-11 rounded-full bg-[#00a884] text-[#0b141a] flex items-center justify-center disabled:opacity-40"
+                    className="h-11 w-11 rounded-xl bg-primary text-black flex items-center justify-center disabled:opacity-40 shrink-0"
                   >
                     <Send size={19} />
                   </button>
@@ -378,11 +383,11 @@ export const Messages = () => {
           ) : (
             <div className="flex-1 flex items-center justify-center text-center px-8">
               <div className="max-w-md">
-                <div className="mx-auto h-24 w-24 rounded-full border border-[#2a3942] flex items-center justify-center text-[#8696a0] mb-6">
+                <div className="mx-auto h-24 w-24 rounded-3xl border border-white/10 bg-white/5 flex items-center justify-center text-white/40 mb-6">
                   <Send size={34} />
                 </div>
-                <h1 className="text-3xl font-light text-[#e9edef]">GoUnion Web</h1>
-                <p className="mt-3 text-sm leading-6 text-[#8696a0]">
+                <h1 className="text-3xl font-serif text-white">GoUnion Messages</h1>
+                <p className="mt-3 text-sm leading-6 text-white/40">
                   Select a chat to send and receive messages without leaving this screen.
                 </p>
               </div>
