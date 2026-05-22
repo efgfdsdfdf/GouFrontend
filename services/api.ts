@@ -366,6 +366,12 @@ export const api = {
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
       return res.data.map(transformPost).filter((post: any) => !isVideoMedia(post.imageUrl));
     },
+    getReels: async (username: string) => {
+      const profile = await api.profiles.get(username);
+      const userId = profile.id;
+      const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
+      return res.data.map(transformPost).filter((post: any) => isVideoMedia(post.imageUrl));
+    },
     update: async (data: any) => {
       let profile_picture = data.profile_picture;
       let cover_photo = data.cover_photo;

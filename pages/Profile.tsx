@@ -10,6 +10,7 @@ import {
   Edit3,
   Share2,
   Check,
+  Play,
 } from "lucide-react";
 import { useAuthStore } from "../store";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,7 +26,7 @@ export const Profile = () => {
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.username === username;
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<"posts" | "media" | "following" | "followers">("posts");
+  const [activeTab, setActiveTab] = React.useState<"posts" | "reels" | "media" | "following" | "followers">("posts");
 
   const {
     data: user,
@@ -40,6 +41,12 @@ export const Profile = () => {
   const { data: posts, isLoading: postsLoading } = useQuery({
     queryKey: ["profile-posts", username],
     queryFn: () => api.profiles.getPosts(username || ""),
+    enabled: !!username,
+  });
+
+  const { data: reels, isLoading: reelsLoading } = useQuery({
+    queryKey: ["profile-reels", username],
+    queryFn: () => api.profiles.getReels(username || ""),
     enabled: !!username,
   });
 
@@ -125,9 +132,9 @@ export const Profile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto w-full pb-24 pt-8">
+    <div className="max-w-5xl mx-auto w-full pb-28 pt-6 md:pt-8">
       {/* Header */}
-      <div className="relative mb-16 group">
+      <div className="relative mb-20 group px-1 sm:px-0">
         <div className="h-64 rounded-3xl overflow-hidden bg-white/5 border border-white/10 relative">
           {user.coverUrl ? (
             <img src={user.coverUrl} className="w-full h-full object-cover" alt="Cover" />
@@ -205,7 +212,7 @@ export const Profile = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-2 sm:px-4">
         {/* Sidebar */}
         <div className="md:col-span-4 space-y-6">
           <div className="glass-panel p-6 rounded-3xl">
@@ -242,10 +249,18 @@ export const Profile = () => {
         </div>
 
         {/* Content */}
-        <div className="md:col-span-8 space-y-6">
-          <div className="flex border-b border-white/5">
+        <div className="md:col-span-8 space-y-6 min-w-0">
+          <div className="glass-panel rounded-3xl border border-white/5 overflow-hidden">
+            <div className="px-4 sm:px-6 pt-5">
+              <div>
+                <h2 className="text-xl font-serif text-white">Profile activity</h2>
+                <p className="text-xs text-white/40 mt-1">Posts and short reels from @{user.username}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex overflow-x-auto border-b border-white/5 px-2 sm:px-4 hide-scrollbar">
             {[
               { id: "posts", label: "Posts" },
+              { id: "reels", label: "Short Reels" },
               { id: "media", label: "Media" },
               { id: "following", label: "Following" },
               { id: "followers", label: "Followers" },
@@ -263,19 +278,73 @@ export const Profile = () => {
                 )}
               </button>
             ))}
+            </div>
           </div>
 
-          <div className="space-y-6">
-            {(activeTab === "posts" || activeTab === "media") ? (
+          <div className="rounded-3xl border border-white/5 bg-white/[0.025] p-3 sm:p-5 md:p-6">
+            {(activeTab === "posts" || activeTab === "media" || activeTab === "reels") ? (
               postsLoading ? (
                 <Skeleton className="h-64 rounded-3xl w-full" />
+              ) : activeTab === "reels" ? (
+                reelsLoading ? (
+                  <Skeleton className="h-64 rounded-3xl w-full" />
+                ) : (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between gap-4 px-1">
+                      <div>
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white/80">Short Reels</h3>
+                        <p className="text-xs text-white/35 mt-1">Videos posted only to Discover.</p>
+                      </div>
+                      <span className="text-xs text-white/40">{reels?.length || 0} reels</span>
+                    </div>
+                    {reels?.length ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                        {reels.map((reel: any) => (
+                          <Link
+                            key={reel.id}
+                            to="/discover"
+                            className="group relative aspect-[9/16] overflow-hidden rounded-2xl bg-black border border-white/10 shadow-lg"
+                          >
+                            <video
+                              src={reel.imageUrl}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/10" />
+                            <div className="absolute left-3 top-3 h-8 w-8 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center border border-white/10">
+                              <Play size={14} className="text-white fill-white ml-0.5" />
+                            </div>
+                            <div className="absolute inset-x-0 bottom-0 p-3">
+                              <p className="line-clamp-2 text-xs font-medium text-white/90">
+                                {reel.content || "Short reel"}
+                              </p>
+                              <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-white/45">
+                                {reel.likes} likes
+                              </p>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
+                        <p className="text-white/35">No short reels yet.</p>
+                      </div>
+                    )}
+                  </div>
+                )
               ) : (
-                <div className="space-y-6 text-white">
+                <div className="space-y-7 text-white">
                   {activeTab === "posts" && isOwnProfile && (
-                    <CreatePost profileUsername={username} />
+                    <div className="mb-2">
+                      <CreatePost profileUsername={username} />
+                    </div>
                   )}
                   {(activeTab === "media" ? posts?.filter((p: any) => p.imageUrl) : posts)?.map((post: any) => (
-                    <PostCard key={post.id} post={post} />
+                    <div key={post.id} className="mx-0 sm:mx-1 md:mx-2">
+                      <PostCard post={post} />
+                    </div>
                   ))}
                   {((activeTab === "media" ? posts?.filter((p: any) => p.imageUrl) : posts)?.length === 0) && (
                     <div className="py-20 text-center bg-white/5 rounded-3xl border border-dashed border-white/10">
