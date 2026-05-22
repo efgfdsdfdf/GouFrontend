@@ -188,6 +188,12 @@ const notificationMessage = (notification: any) => {
   }
 };
 
+let notificationsEndpointUnavailable = false;
+
+const isNotFound = (error: unknown) => {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+};
+
 export const transformNotification = (notification: any): Notification => {
   const actor = notification.actor || notification.sender || notification.user || {};
   const createdAt = notification.created_at || notification.timestamp;
@@ -684,16 +690,43 @@ export const api = {
   },
   notifications: {
     getAll: async () => {
-      const res = await apiClient.get('/notifications/');
-      return res.data.map(transformNotification);
+      if (notificationsEndpointUnavailable) return [];
+      try {
+        const res = await apiClient.get('/notifications/');
+        return res.data.map(transformNotification);
+      } catch (error) {
+        if (isNotFound(error)) {
+          notificationsEndpointUnavailable = true;
+          return [];
+        }
+        throw error;
+      }
     },
     getUnreadCount: async () => {
-      const res = await apiClient.get('/notifications/unread-count');
-      return res.data;
+      if (notificationsEndpointUnavailable) return { count: 0 };
+      try {
+        const res = await apiClient.get('/notifications/unread-count');
+        return res.data;
+      } catch (error) {
+        if (isNotFound(error)) {
+          notificationsEndpointUnavailable = true;
+          return { count: 0 };
+        }
+        throw error;
+      }
     },
     markRead: async () => {
-      const res = await apiClient.post('/notifications/read');
-      return res.data;
+      if (notificationsEndpointUnavailable) return { status: 'unavailable' };
+      try {
+        const res = await apiClient.post('/notifications/read');
+        return res.data;
+      } catch (error) {
+        if (isNotFound(error)) {
+          notificationsEndpointUnavailable = true;
+          return { status: 'unavailable' };
+        }
+        throw error;
+      }
     },
   },
   reports: {
