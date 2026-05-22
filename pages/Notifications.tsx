@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../services/api';
-import { Bell, Heart, MessageSquare, UserPlus, Users, ArrowLeft } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -81,12 +81,12 @@ export const Notifications = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`glass-panel p-4 rounded-2xl flex items-center gap-4 border transition-colors ${notif.is_read ? 'border-white/5 opacity-75' : 'border-primary/30 bg-primary/5'}`}
+              className={`glass-panel p-4 rounded-2xl flex items-center gap-4 border transition-colors ${notif.read ? 'border-white/5 opacity-75' : 'border-primary/30 bg-primary/5'}`}
             >
-              <Link to={`/profile/${notif.sender?.username}`} className="relative">
-                <img 
-                  src={notif.sender?.profile?.profile_picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.sender?.username}`}
-                  alt="" 
+              <Link to={`/profile/${notif.actor?.username}`} className="relative">
+                <img
+                  src={notif.actor?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.actor?.username}`}
+                  alt=""
                   className="w-12 h-12 rounded-xl object-cover bg-white/5"
                 />
                 <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#0a0a0c] rounded-full flex items-center justify-center">
@@ -95,13 +95,13 @@ export const Notifications = () => {
               </Link>
               <div className="flex-1">
                 <p className="text-sm text-white/80">
-                  <Link to={`/profile/${notif.sender?.username}`} className="font-bold text-white hover:underline">
-                    {notif.sender?.profile?.full_name || notif.sender?.username}
+                  <Link to={`/profile/${notif.actor?.username}`} className="font-bold text-white hover:underline">
+                    {notif.actor?.fullName || notif.actor?.username}
                   </Link>{" "}
-                  {getMessageForType(notif.type)}
+                  {notif.message || getMessageForType(notif.type)}
                 </p>
                 <p className="text-xs text-white/40 mt-1">
-                  {new Date(notif.created_at).toLocaleDateString()} at {new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {notif.timestamp}
                 </p>
               </div>
             </motion.div>

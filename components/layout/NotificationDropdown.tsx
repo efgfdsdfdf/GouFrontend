@@ -1,7 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Heart, MessageCircle, UserPlus, Check } from "lucide-react";
-import { transformUser } from "../../services/api"; // I'll need to export this or just handle it localy
+import { Bell, Heart, MessageCircle, UserPlus, X } from "lucide-react";
 
 interface Notification {
   id: string;
@@ -43,24 +42,36 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       initial={{ opacity: 0, y: 10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-      className="absolute top-full right-[-10px] md:right-0 mt-4 w-[calc(100vw-2rem)] sm:w-96 max-w-[380px] bg-[#141417]/95 backdrop-blur-2xl border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[110]"
+      className="fixed left-3 right-3 top-20 md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-96 md:max-w-[380px] bg-[#111113]/98 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[180]"
     >
-      <div className="p-6 border-b border-white/5 flex items-center justify-between">
-        <h3 className="text-white font-black text-xs uppercase tracking-widest">
-          Notifications
-        </h3>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onMarkRead();
-          }}
-          className="text-[10px] font-black text-primary uppercase tracking-widest hover:opacity-80 transition-opacity"
-        >
-          Clear All
-        </button>
+      <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-white font-black text-sm md:text-xs uppercase tracking-widest">
+            Notifications
+          </h3>
+          <p className="text-[11px] text-zinc-500 mt-1 md:hidden">Latest activity from GoUnion</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onMarkRead();
+            }}
+            className="h-9 px-3 rounded-xl bg-white/5 text-[10px] font-black text-primary uppercase tracking-widest hover:bg-white/10 transition-colors"
+          >
+            Read
+          </button>
+          <button
+            onClick={onClose}
+            className="h-9 w-9 md:hidden rounded-xl bg-white/5 text-zinc-400 flex items-center justify-center"
+            aria-label="Close notifications"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </div>
 
-      <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+      <div className="max-h-[min(70vh,430px)] overflow-y-auto custom-scrollbar">
         {notifications.length > 0 ? (
           notifications.map((n) => (
             <div
@@ -73,7 +84,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             >
               <div className="relative shrink-0">
                 <img
-                  src={n.actor.avatarUrl}
+                  src={n.actor.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${n.actor.username}`}
                   className="w-10 h-10 rounded-full object-cover border border-white/10"
                   alt={n.actor.username}
                 />
@@ -85,9 +96,9 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] text-zinc-300 leading-snug">
                   <span className="font-black text-white">
-                    {n.actor.username}
+                    {n.actor.fullName || n.actor.username}
                   </span>{" "}
-                  {n.message.replace(n.actor.username, "").trim()}
+                  {n.message}
                 </p>
                 <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight mt-1 group-hover:text-zinc-500 transition-colors">
                   {n.timestamp}
@@ -112,7 +123,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       </div>
 
       <div className="p-4 bg-[#0a0a0c]/50 text-center">
-        <button className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors">
+        <button
+          onClick={onClose}
+          className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors"
+        >
           View All History
         </button>
       </div>

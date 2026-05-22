@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { Image as ImageIcon, Send, Video, Paperclip, X } from "lucide-react";
+import { Image as ImageIcon, Send, Paperclip, X } from "lucide-react";
 import { useAuthStore } from "../../store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
@@ -18,13 +18,13 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
 
   const mutation = useMutation({
     mutationFn: (data: { caption: string; image?: File | null }) =>
-      api.posts.create(data),
+      api.posts.createFeedPost(data),
     onSuccess: () => {
       const ownerUsername = profileUsername || user?.username;
       if (ownerUsername) {
         queryClient.invalidateQueries({ queryKey: ["profile-posts", ownerUsername] });
       }
-      queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
       handleRemoveFile();
       setContent("");
     },
@@ -33,6 +33,10 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.type.startsWith("video/")) {
+        alert("Videos belong in Discover reels. Feed posts accept text and photos only.");
+        return;
+      }
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);

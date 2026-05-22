@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 import axios from 'axios';
+import { Notification } from '../types';
 import { useAuthStore } from '../store';
 import { authStorage } from '../utils/persistentStorage';
 
@@ -71,6 +72,11 @@ const getFullUrl = (url: string | null) => {
   return `${API_URL}${cleanUrl}`;
 };
 
+const isVideoMedia = (url?: string | null) => {
+  if (!url) return false;
+  return /\.(mp4|webm|mov|m4v|avi|mkv|m3u8)(\?|$)/i.test(url);
+};
+
 // Helper to transform user data
 export const transformUser = (user: any) => {
   return {
@@ -109,6 +115,68 @@ const transformPost = (post: any) => {
     timestamp: new Date(post.created_at).toLocaleDateString(),
     isLiked: post.likes?.some((l: any) => l.id === currentUserId) || false,
     groupId: post.group_id?.toString(),
+  };
+};
+
+const transformProfile = (data: any, usernameFallback = '') => {
+  const userData = data.user || data;
+  const profile = data.profile || userData.profile || data;
+  const username = userData.username || data.username || usernameFallback;
+
+  return {
+    id: userData.id || data.user_id || data.id,
+    username,
+    fullName: profile.full_name || userData.full_name || username,
+    avatarUrl:
+      getFullUrl(profile.profile_picture) ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+    university: profile.university || 'University Student',
+    followers: data.followers_count ?? userData.followers_count ?? 0,
+    following: data.following_count ?? userData.following_count ?? 0,
+    bio: profile.bio || '',
+    coverUrl: getFullUrl(profile.cover_photo) || '',
+    isFollowing: data.is_following ?? userData.is_following ?? false,
+    role: userData.role || 'user',
+    isActive: userData.is_active ?? true,
+    totalLikes: data.total_likes ?? userData.total_likes ?? 0,
+    course: profile.course || '',
+    hometown: profile.hometown || '',
+  };
+};
+
+const notificationMessage = (notification: any) => {
+  if (notification.message) return notification.message;
+  switch (notification.type) {
+    case 'like':
+      return 'liked your post.';
+    case 'comment':
+      return 'commented on your post.';
+    case 'follow':
+      return 'started following you.';
+    case 'group_invite':
+      return 'invited you to a group.';
+    case 'group_request':
+      return 'requested to join your group.';
+    case 'new_message':
+      return 'sent you a message.';
+    default:
+      return 'interacted with you.';
+  }
+};
+
+export const transformNotification = (notification: any): Notification => {
+  const actor = notification.actor || notification.sender || notification.user || {};
+  const createdAt = notification.created_at || notification.timestamp;
+
+  return {
+    id: notification.id?.toString() || `${notification.type}-${createdAt || Date.now()}`,
+    type: notification.type || 'activity',
+    actor: transformUser(actor),
+    message: notificationMessage(notification),
+    timestamp: createdAt
+      ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : notification.timestamp || 'Now',
+    read: notification.read ?? notification.is_read ?? false,
   };
 };
 
@@ -180,7 +248,7 @@ export const api = {
         query.set('seed', seed.toFixed(8));
       }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
-      return res.data.map(transformPost);
+      return res.data.map(transformPost).filter((post: any) => !isVideoMedia(post.imageUrl));
     },
     getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
       const query = new URLSearchParams({
@@ -192,7 +260,7 @@ export const api = {
         query.set('seed', seed.toFixed(8));
       }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
-      return res.data.map(transformPost);
+      return res.data.map(transformPost).filter((post: any) => isVideoMedia(post.imageUrl));
     },
     create: async (data: any) => {
       let mediaUrl = null;
@@ -208,6 +276,43 @@ export const api = {
         caption: data.caption,
         image: isVideo ? null : mediaUrl,
         video: isVideo ? mediaUrl : null,
+      });
+      return transformPost(res.data);
+    },
+    createFeedPost: async (data: any) => {
+      if (data.image?.type?.startsWith('video/')) {
+        throw new Error('Feed posts only accept text and photos. Use Discover for reels.');
+      }
+
+      let mediaUrl = null;
+      if (data.image) {
+        const formData = new FormData();
+        formData.append('file', data.image);
+        const uploadRes = await apiClient.post('/upload/', formData);
+        mediaUrl = uploadRes.data.url;
+      }
+
+      const res = await apiClient.post('/posts/', {
+        caption: data.caption,
+        image: mediaUrl,
+        video: null,
+      });
+      return transformPost(res.data);
+    },
+    createReel: async (data: any) => {
+      if (!data.image?.type?.startsWith('video/')) {
+        throw new Error('Discover posts must be videos.');
+      }
+
+      const formData = new FormData();
+      formData.append('file', data.image);
+      const uploadRes = await apiClient.post('/upload/', formData);
+      const mediaUrl = uploadRes.data.url;
+
+      const res = await apiClient.post('/posts/', {
+        caption: data.caption,
+        image: null,
+        video: mediaUrl,
       });
       return transformPost(res.data);
     },
@@ -234,31 +339,32 @@ export const api = {
   },
   profiles: {
     get: async (username: string) => {
-      const res = await apiClient.get(`/profiles/${username}`);
-      const d = res.data;
-      return {
-        id: d.user_id,
-        username: d.username || username,
-        fullName: d.full_name || d.username || username,
-        avatarUrl:
-          getFullUrl(d.profile_picture) ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-        university: d.university || 'University Student',
-        followers: d.followers_count ?? 0,
-        following: d.following_count ?? 0,
-        bio: d.bio || '',
-        coverUrl: getFullUrl(d.cover_photo) || '',
-        isFollowing: d.is_following ?? false,
-        course: d.course || '',
-        hometown: d.hometown || '',
-        totalLikes: d.total_likes ?? 0,
-      };
+      const cachedUser = authStorage.getItem('user_data');
+      const currentUser = cachedUser ? JSON.parse(cachedUser) : null;
+      if (currentUser?.username === username) {
+        try {
+          const res = await apiClient.get('/users/me/');
+          return transformProfile(res.data, username);
+        } catch {
+          return currentUser;
+        }
+      }
+
+      try {
+        const res = await apiClient.get(`/profiles/${username}`);
+        return transformProfile(res.data, username);
+      } catch (profileError) {
+        const res = await apiClient.get(`/search/users?q=${encodeURIComponent(username)}`);
+        const match = res.data.find((u: any) => u.username?.toLowerCase() === username.toLowerCase());
+        if (!match) throw profileError;
+        return transformProfile(match, username);
+      }
     },
     getPosts: async (username: string) => {
-      const profileRes = await apiClient.get(`/profiles/${username}`);
-      const userId = profileRes.data.user_id;
+      const profile = await api.profiles.get(username);
+      const userId = profile.id;
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
-      return res.data.map(transformPost);
+      return res.data.map(transformPost).filter((post: any) => !isVideoMedia(post.imageUrl));
     },
     update: async (data: any) => {
       let profile_picture = data.profile_picture;
@@ -278,7 +384,7 @@ export const api = {
         cover_photo = uploadRes.data.url;
       }
 
-      await apiClient.put('/profiles/me', {
+      await apiClient.put('/users/me/profile', {
         full_name: data.fullName,
         bio: data.bio,
         university: data.university,
@@ -306,10 +412,15 @@ export const api = {
       return res.data.map(transformUser);
     },
     getSuggestions: async () => {
-      const res = await apiClient.get('/search/users?q=');
-      return res.data
-        .map(transformUser)
-        .filter((u: any) => String(u.id) !== String(authStorage.getItem('user_id')));
+      try {
+        const res = await apiClient.get('/users/suggestions');
+        return res.data.map(transformUser);
+      } catch {
+        const res = await apiClient.get('/search/users?q=');
+        return res.data
+          .map(transformUser)
+          .filter((u: any) => String(u.id) !== String(authStorage.getItem('user_id')));
+      }
     },
   },
   groups: {
@@ -512,7 +623,7 @@ export const api = {
   notifications: {
     getAll: async () => {
       const res = await apiClient.get('/notifications/');
-      return res.data;
+      return res.data.map(transformNotification);
     },
     getUnreadCount: async () => {
       const res = await apiClient.get('/notifications/unread-count');

@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "../components/ui/Skeleton";
 import {
@@ -21,6 +21,7 @@ import { api } from "../services/api";
 export const Profile = () => {
   const { username } = useParams<{ username: string }>();
   const { user: currentUser } = useAuthStore();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.username === username;
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
@@ -64,7 +65,7 @@ export const Profile = () => {
   const chatMutation = useMutation({
     mutationFn: (userId: string) => api.chats.createConversation([userId]),
     onSuccess: () => {
-      window.location.href = '/#/messages';
+      navigate('/messages');
     },
   });
 

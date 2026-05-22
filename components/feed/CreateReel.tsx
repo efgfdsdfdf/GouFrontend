@@ -19,7 +19,7 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (data: { caption: string; image?: File | null }) => api.posts.create(data),
+    mutationFn: (data: { caption: string; image?: File | null }) => api.posts.createReel(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
       handleRemoveFile();
@@ -33,6 +33,10 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
     if (file) {
       if (file.size > 50 * 1024 * 1024) {
         alert("Video size must be less than 50MB");
+        return;
+      }
+      if (!file.type.startsWith("video/")) {
+        alert("Discover only accepts video reels.");
         return;
       }
       setVideo(file);

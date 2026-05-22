@@ -4,9 +4,11 @@ import { Search, MessageSquare, Check, MapPin, GraduationCap } from "lucide-reac
 import { api } from "../services/api";
 import { Skeleton } from "../components/ui/Skeleton";
 import { motion } from "framer-motion";
+import { Link, useNavigate } from "react-router-dom";
 
 export const Alumni = () => {
   const [query, setQuery] = useState("");
+  const navigate = useNavigate();
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["users", query],
@@ -17,7 +19,7 @@ export const Alumni = () => {
   const chatMutation = useMutation({
     mutationFn: (userId: string) => api.chats.createConversation([userId]),
     onSuccess: () => {
-      window.location.href = '/#/messages';
+      navigate('/messages');
     },
   });
 
@@ -83,9 +85,9 @@ export const Alumni = () => {
               </div>
 
               <div className="space-y-1 mb-6">
-                <a href={`/#/profile/${user.username}`} className="font-serif text-2xl text-white hover:underline cursor-pointer">
+                <Link to={`/profile/${user.username}`} className="font-serif text-2xl text-white hover:underline cursor-pointer">
                   {user.fullName || `@${user.username}`}
-                </a>
+                </Link>
                 <div className="flex items-center gap-2 text-white/50 text-sm">
                   <MapPin size={14} />
                   <span>{user.university || "Student"}</span>
@@ -93,12 +95,12 @@ export const Alumni = () => {
               </div>
 
               <div className="flex gap-2">
-                <a
-                  href={`/#/profile/${user.username}`}
+                <Link
+                  to={`/profile/${user.username}`}
                   className="flex-1 py-3 bg-white/5 text-white border border-white/10 rounded-xl font-medium text-sm transition-all hover:bg-white/10 active:scale-95 text-center flex items-center justify-center"
                 >
                   View Profile
-                </a>
+                </Link>
                 <button
                   onClick={() => chatMutation.mutate(user.id)}
                   disabled={chatMutation.isPending}

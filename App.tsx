@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -6,7 +6,7 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./components/layout/Sidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
 import { TopNav } from "./components/layout/TopNav";
@@ -27,7 +27,7 @@ import { Notifications } from "./pages/Notifications";
 import { useAuthStore } from "./store";
 import { API_URL, api } from "./services/api";
 import { authStorage } from "./utils/persistentStorage";
-import { ToastProvider } from "./components/ui/Toast";
+import { ToastProvider, useToast } from "./components/ui/Toast";
 import { GoUnionLoader } from "./components/ui/GoUnionLoader";
 
 const queryClient = new QueryClient({
@@ -43,22 +43,29 @@ const queryClient = new QueryClient({
 const AppLayout = ({ children }: { children?: React.ReactNode }) => {
   const location = useLocation();
   const isDiscover = location.pathname === '/discover';
+  const isMessages = location.pathname === '/messages';
 
   return (
     <div className="flex h-screen bg-[#030303] text-white overflow-hidden selection:bg-white/20 relative">
-      <Sidebar />
+      {!isMessages && <Sidebar />}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        <div className="fixed top-0 right-0 left-0 md:left-64 lg:right-80 z-[100]">
-          <TopNav />
-        </div>
-        <main className={`flex-1 overflow-y-auto hide-scrollbar md:pl-64 lg:pr-80 ${isDiscover ? 'pb-0' : 'pb-6'} md:pb-0 pt-16`}>
-          <div className="px-4 py-6 md:px-8 max-w-5xl mx-auto">
+        {!isMessages && (
+          <div className="fixed top-0 right-0 left-0 md:left-64 lg:right-80 z-[100]">
+            <TopNav />
+          </div>
+        )}
+        <main
+          className={`flex-1 overflow-y-auto hide-scrollbar ${
+            isMessages ? 'p-0' : `md:pl-64 lg:pr-80 ${isDiscover ? 'pb-0' : 'pb-6'} md:pb-0 pt-16`
+          }`}
+        >
+          <div className={isMessages ? "h-full w-full" : "px-4 py-6 md:px-8 max-w-5xl mx-auto"}>
             {children}
           </div>
         </main>
       </div>
-      <RightSidebar />
-      <MobileNav />
+      {!isMessages && <RightSidebar />}
+      {!isMessages && <MobileNav />}
     </div>
   );
 };
@@ -88,6 +95,7 @@ const AppStartupSplash = () => {
 
 const useWebSocket = () => {
   const { user, isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
@@ -105,6 +113,16 @@ const useWebSocket = () => {
           queryClient.invalidateQueries({ queryKey: ["messages", msg.conversation_id.toString()] });
           queryClient.invalidateQueries({ queryKey: ["chats"] });
           queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          if (String(msg.sender_id) !== String(user.id)) {
+            toast("New message", "info");
+          }
+        }
+
+        if (data.type === 'notification' || data.type === 'new_notification') {
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+          toast(data.message || "New notification", "info");
         }
       } catch (e) {
         console.error("WS Message error", e);
@@ -116,7 +134,43 @@ const useWebSocket = () => {
     };
 
     return () => socket.close();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, toast]);
+};
+
+const useNotificationPopups = () => {
+  const { isAuthenticated } = useAuthStore();
+  const { toast } = useToast();
+  const seenIds = useRef<Set<string>>(new Set());
+  const initialized = useRef(false);
+
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: api.notifications.getAll,
+    enabled: isAuthenticated,
+    refetchInterval: 15000,
+  });
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      seenIds.current.clear();
+      initialized.current = false;
+      return;
+    }
+
+    const unread = notifications.filter((n: any) => !n.read);
+
+    if (!initialized.current) {
+      unread.forEach((n: any) => seenIds.current.add(n.id));
+      initialized.current = true;
+      return;
+    }
+
+    unread.forEach((n: any) => {
+      if (seenIds.current.has(n.id)) return;
+      seenIds.current.add(n.id);
+      toast(`${n.actor?.username || "Someone"} ${n.message}`, "info");
+    });
+  }, [isAuthenticated, notifications, toast]);
 };
 
 const AppRoutes = () => {
@@ -159,6 +213,7 @@ const AppRoutes = () => {
   }, [location.pathname]);
 
   useWebSocket();
+  useNotificationPopups();
 
   const PUBLIC_ROUTES = [
     "/login",
