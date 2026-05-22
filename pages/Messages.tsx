@@ -5,10 +5,13 @@ import {
   ArrowLeft,
   CheckCheck,
   Image as ImageIcon,
+  MessageSquarePlus,
   MoreVertical,
   Paperclip,
+  Plus,
   Search,
   Send,
+  Share2,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +23,9 @@ export const Messages = () => {
   const currentUserId = authStorage.getItem("user_id");
   const [searchParams, setSearchParams] = useSearchParams();
   const userIdFromQuery = searchParams.get("userId");
+  const queryUsername = searchParams.get("username") || "";
+  const queryName = searchParams.get("name") || queryUsername || "New chat";
+  const queryAvatar = searchParams.get("avatar") || "";
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -28,6 +34,7 @@ export const Messages = () => {
   const [searchText, setSearchText] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
+  const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 768px)").matches);
 
   const { data: chats = [] } = useQuery({
@@ -40,8 +47,24 @@ export const Messages = () => {
   const createChatMutation = useMutation({
     mutationFn: (participantId: string) => api.chats.createConversation([participantId]),
     onSuccess: (newChat) => {
+      const normalizedChat = {
+        id: newChat.id.toString(),
+        partner: newChat.partner || {
+          id: userIdFromQuery,
+          username: queryUsername,
+          fullName: queryName,
+          avatarUrl: queryAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${queryUsername || userIdFromQuery}`,
+        },
+        lastMessage: "No messages yet",
+        timestamp: "",
+        unreadCount: 0,
+      };
+      queryClient.setQueryData(["chats"], (old: any[] = []) => {
+        const withoutTemp = old.filter((chat) => !chat.id.toString().startsWith("temp-"));
+        return [normalizedChat, ...withoutTemp.filter((chat) => chat.id !== normalizedChat.id)];
+      });
       queryClient.invalidateQueries({ queryKey: ["chats"] });
-      setSelectedChatId(newChat.id.toString());
+      setSelectedChatId(normalizedChat.id);
       setSearchParams({}, { replace: true });
     },
   });
@@ -67,22 +90,43 @@ export const Messages = () => {
       setSearchParams({}, { replace: true });
       return;
     }
-    if (!createChatMutation.isPending && !createChatMutation.isSuccess) {
+    if (!createChatMutation.isPending) {
+      const tempChatId = `temp-${userIdFromQuery}`;
+      const tempChat = {
+        id: tempChatId,
+        partner: {
+          id: userIdFromQuery,
+          username: queryUsername,
+          fullName: queryName,
+          avatarUrl: queryAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${queryUsername || userIdFromQuery}`,
+        },
+        lastMessage: "Starting conversation...",
+        timestamp: "",
+        unreadCount: 0,
+      };
+      queryClient.setQueryData(["chats"], (old: any[] = []) => {
+        if (old.some((chat) => chat.id === tempChatId || String(chat.partner.id) === String(userIdFromQuery))) return old;
+        return [tempChat, ...old];
+      });
+      setSelectedChatId(tempChatId);
       createChatMutation.mutate(userIdFromQuery);
     }
   }, [
     userIdFromQuery,
+    queryUsername,
+    queryName,
+    queryAvatar,
     chats,
     createChatMutation.isPending,
-    createChatMutation.isSuccess,
     createChatMutation,
+    queryClient,
     setSearchParams,
   ]);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["messages", selectedChatId],
     queryFn: () => api.chats.getMessages(selectedChatId!),
-    enabled: !!selectedChatId,
+    enabled: !!selectedChatId && !selectedChatId.startsWith("temp-"),
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
   });
@@ -92,6 +136,7 @@ export const Messages = () => {
   }, [messages, selectedChatId]);
 
   const selectedChat = chats.find((chat: any) => chat.id === selectedChatId);
+  const isChatPreparing = Boolean(selectedChatId?.startsWith("temp-"));
   const filteredChats = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return chats;
@@ -114,6 +159,34 @@ export const Messages = () => {
     clearAttachment();
     setAttachment(file);
     setAttachmentPreview(URL.createObjectURL(file));
+    setIsAttachMenuOpen(false);
+  };
+
+  const inviteContacts = async () => {
+    const inviteText = "Join me on GoUnion. Download/open the app and let's connect.";
+    const inviteUrl = window.location.origin;
+    try {
+      const nav = navigator as Navigator & {
+        contacts?: {
+          select: (properties: string[], options?: { multiple?: boolean }) => Promise<Array<{ name?: string[]; tel?: string[]; email?: string[] }>>;
+        };
+      };
+
+      if (nav.contacts?.select) {
+        await nav.contacts.select(["name", "tel", "email"], { multiple: true });
+      }
+
+      if (navigator.share) {
+        await navigator.share({ title: "Join GoUnion", text: inviteText, url: inviteUrl });
+      } else {
+        await navigator.clipboard.writeText(`${inviteText}\n${inviteUrl}`);
+        alert("Invite link copied.");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        console.error("Invite failed", err);
+      }
+    }
   };
 
   const sendMessageMutation = useMutation({
@@ -173,7 +246,7 @@ export const Messages = () => {
   });
 
   const handleSend = () => {
-    if ((!messageText.trim() && !attachment) || !selectedChatId) return;
+    if ((!messageText.trim() && !attachment) || !selectedChatId || isChatPreparing) return;
     sendMessageMutation.mutate({
       chatId: selectedChatId,
       content: messageText.trim(),
@@ -206,7 +279,12 @@ export const Messages = () => {
                 <p className="text-xs text-white/40 mt-1">Messages stay in sync live</p>
               </div>
             </Link>
-            <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
+            <button
+              onClick={inviteContacts}
+              className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
+              aria-label="Invite contacts"
+              title="Invite contacts"
+            >
               <MoreVertical size={20} />
             </button>
           </div>
@@ -282,8 +360,13 @@ export const Messages = () => {
                   <p className="text-[15px] font-medium text-white truncate">{selectedChat.partner.fullName}</p>
                   <p className="text-xs text-white/40 truncate">tap for profile</p>
                 </Link>
-                <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
-                  <Search size={20} />
+                <button
+                  onClick={inviteContacts}
+                  className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
+                  aria-label="Invite contacts"
+                  title="Invite contacts"
+                >
+                  <Share2 size={20} />
                 </button>
                 <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
                   <MoreVertical size={20} />
@@ -345,12 +428,40 @@ export const Messages = () => {
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center"
-                  >
-                    <Paperclip size={22} />
-                  </button>
+                  <div className="relative shrink-0">
+                    <button
+                      onClick={() => setIsAttachMenuOpen((prev) => !prev)}
+                      className="h-11 w-11 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center"
+                      aria-label="Open attachments"
+                    >
+                      <Plus size={22} className={`transition-transform ${isAttachMenuOpen ? "rotate-45" : ""}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isAttachMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                          className="absolute bottom-14 left-0 rounded-2xl border border-white/10 bg-[#111114] p-2 shadow-2xl flex gap-2"
+                        >
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-11 w-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
+                            aria-label="Attach file"
+                          >
+                            <Paperclip size={21} />
+                          </button>
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-11 w-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
+                            aria-label="Attach image"
+                          >
+                            <ImageIcon size={20} />
+                          </button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -358,23 +469,18 @@ export const Messages = () => {
                     onChange={handleFileSelect}
                     accept="image/*,video/*"
                   />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="h-11 w-11 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center"
-                  >
-                    <ImageIcon size={21} />
-                  </button>
                   <input
                     type="text"
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Type a message"
+                    placeholder={isChatPreparing ? "Preparing chat..." : "Type a message"}
+                    disabled={isChatPreparing}
                     className="h-11 min-w-0 flex-1 rounded-xl bg-white/5 border border-white/10 px-4 text-[15px] text-white placeholder:text-white/35 outline-none focus:border-primary/40"
                   />
                   <button
                     onClick={handleSend}
-                    disabled={sendMessageMutation.isPending || (!messageText.trim() && !attachment)}
+                    disabled={isChatPreparing || sendMessageMutation.isPending || (!messageText.trim() && !attachment)}
                     className="h-11 w-11 rounded-xl bg-primary text-black flex items-center justify-center disabled:opacity-40 shrink-0"
                   >
                     <Send size={19} />
@@ -386,7 +492,7 @@ export const Messages = () => {
             <div className="flex-1 flex items-center justify-center text-center px-8">
               <div className="max-w-md">
                 <div className="mx-auto h-24 w-24 rounded-3xl border border-white/10 bg-white/5 flex items-center justify-center text-white/40 mb-6">
-                  <Send size={34} />
+                  <MessageSquarePlus size={34} />
                 </div>
                 <h1 className="text-3xl font-serif text-white">GoUnion Messages</h1>
                 <p className="mt-3 text-sm leading-6 text-white/40">

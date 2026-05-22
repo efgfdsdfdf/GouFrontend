@@ -92,6 +92,16 @@ const AppStartupSplash = () => {
   );
 };
 
+const PageLoadingDots = () => (
+  <div className="fixed top-20 left-1/2 z-[220] -translate-x-1/2 rounded-full border border-white/10 bg-black/70 px-4 py-2 shadow-2xl backdrop-blur-xl">
+    <div className="flex items-center gap-1.5" aria-label="Loading page">
+      <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-bounce [animation-delay:-0.2s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-bounce [animation-delay:-0.1s]" />
+      <span className="h-1.5 w-1.5 rounded-full bg-white/70 animate-bounce" />
+    </div>
+  </div>
+);
+
 const useWebSocket = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { toast } = useToast();
@@ -196,6 +206,7 @@ const AppRoutes = () => {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
+  const [showPageDots, setShowPageDots] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -221,6 +232,16 @@ const AppRoutes = () => {
     }, 350);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (location.pathname === "/messages" || location.pathname === "/discover") {
+      setShowPageDots(false);
+      return;
+    }
+    setShowPageDots(true);
+    const timer = window.setTimeout(() => setShowPageDots(false), 360);
+    return () => window.clearTimeout(timer);
+  }, [location.pathname]);
 
   useWebSocket();
   useNotificationPopups();
@@ -249,6 +270,7 @@ const AppRoutes = () => {
 
   return (
     <>
+      {showPageDots && <PageLoadingDots />}
       <Routes>
         <Route
           path="/login"

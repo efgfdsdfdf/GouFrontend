@@ -192,7 +192,7 @@ export const Profile = () => {
           ) : (
             <>
               <Link 
-                to={`/messages?userId=${user.id}`}
+                to={`/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`}
                 className="p-2.5 bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors"
               >
                 <MessageSquare size={20} />
