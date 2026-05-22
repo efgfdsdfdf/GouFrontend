@@ -8,32 +8,38 @@ export const API_URL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? 'http://127.0.0.1:8001' : DEFAULT_PROD_API_URL);
 
-// Create axios instance
-const apiClient = axios.create({
+// Create Axios instance
+export const apiClient = axios.create({
   baseURL: API_URL,
   timeout: 15000,
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = authStorage.getItem('access_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+// Add interceptor to attach access token
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = authStorage.getItem('access_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Add interceptor to handle unauthorized/suspended responses
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const isSuspended = error.response?.status === 403 && error.response?.data?.detail === "Your account has been suspended.";
+    const isSuspended =
+      error.response?.status === 403 &&
+      error.response?.data?.detail === "Your account has been suspended.";
     const isUnauthorized = error.response?.status === 401;
 
     if (isUnauthorized && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = authStorage.getItem('refresh_token');
-      
+
       if (refreshToken) {
         try {
           const res = await api.auth.refresh(refreshToken);
@@ -42,7 +48,6 @@ apiClient.interceptors.response.use(
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
           return apiClient(originalRequest);
         } catch (refreshError) {
-          // Keep the saved session until the user explicitly logs out.
           console.error("Session refresh failed", refreshError);
         }
       }
@@ -52,6 +57,7 @@ apiClient.interceptors.response.use(
       useAuthStore.getState().logout();
       window.location.href = '/login';
     }
+
     return Promise.reject(error);
   }
 );
@@ -71,7 +77,9 @@ export const transformUser = (user: any) => {
     id: user.id,
     username: user.username,
     fullName: user.profile?.full_name || user.username,
-    avatarUrl: getFullUrl(user.profile?.profile_picture) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
+    avatarUrl:
+      getFullUrl(user.profile?.profile_picture) ||
+      `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`,
     university: user.profile?.university || 'University Student',
     followers: 0,
     following: 0,
@@ -89,14 +97,13 @@ const transformPost = (post: any) => {
   const user = userStr ? JSON.parse(userStr) : null;
   const currentUserId = user ? user.id : null;
 
-  // Support both 'image' and 'video' fields from the backend
   const rawMedia = post.video || post.image;
 
   return {
     id: post.id.toString(),
     author: transformUser(post.user),
     content: post.caption || '',
-    imageUrl: getFullUrl(rawMedia),   // kept as imageUrl for compatibility; MediaPlayer auto-detects type
+    imageUrl: getFullUrl(rawMedia),
     likes: post.likes_count || 0,
     comments: post.comments?.length || 0,
     timestamp: new Date(post.created_at).toLocaleDateString(),
@@ -115,9 +122,9 @@ export const api = {
   auth: {
     login: async (credentials: any) => {
       const formData = new FormData();
-      formData.append('username', credentials.email); // OAuth2 expects username
+      formData.append('username', credentials.email);
       formData.append('password', credentials.password);
-      
+
       const res = await apiClient.post('/token', formData);
       const accessToken = res.data.access_token;
       const refreshToken = res.data.refresh_token;
@@ -125,22 +132,20 @@ export const api = {
       if (refreshToken) {
         authStorage.setItem('refresh_token', refreshToken);
       }
-      
+
       const userRes = await apiClient.get('/users/me/');
       const transformedUser = transformUser(userRes.data);
       authStorage.setItem('user_data', JSON.stringify(transformedUser));
       authStorage.setItem('user_id', transformedUser.id);
-      
+
       return { user: transformedUser, access_token: accessToken };
     },
     signup: async (data: any) => {
-      const res = await apiClient.post('/users/', {
+      await apiClient.post('/users/', {
         username: data.username,
         email: data.email,
-        password: data.password
+        password: data.password,
       });
-      
-      // Auto-login after signup
       return api.auth.login({ email: data.email, password: data.password });
     },
     me: async () => {
@@ -166,20 +171,26 @@ export const api = {
     },
   },
   posts: {
-    getFeed: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
+    getFeed: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
       const query = new URLSearchParams({
         skip: String(pageParam * 10),
-        limit: "10",
+        limit: '10',
       });
+      if (typeof seed === 'number') {
+        query.set('seed', seed.toFixed(8));
+      }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },
-    getReels: async ({ pageParam = 0 }: { pageParam?: number } = {}) => {
+    getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
       const query = new URLSearchParams({
         skip: String(pageParam * 10),
-        limit: "20",
-        reels: "true",
+        limit: '20',
+        reels: 'true',
       });
+      if (typeof seed === 'number') {
+        query.set('seed', seed.toFixed(8));
+      }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
       return res.data.map(transformPost);
     },
@@ -204,6 +215,10 @@ export const api = {
       const res = await apiClient.post(`/posts/${id}/like`);
       return { success: true, likes_count: res.data.likes_count };
     },
+    delete: async (id: string) => {
+      const res = await apiClient.delete(`/posts/${id}`);
+      return res.data;
+    },
     getComments: async (id: string) => {
       const res = await apiClient.get(`/posts/${id}/comments`);
       return res.data;
@@ -215,7 +230,7 @@ export const api = {
     likeComment: async (commentId: string) => {
       const res = await apiClient.post(`/comments/${commentId}/like`);
       return { success: true, likes_count: res.data.likes_count };
-    }
+    },
   },
   profiles: {
     get: async (username: string) => {
@@ -225,7 +240,9 @@ export const api = {
         id: d.user_id,
         username: d.username || username,
         fullName: d.full_name || d.username || username,
-        avatarUrl: getFullUrl(d.profile_picture) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        avatarUrl:
+          getFullUrl(d.profile_picture) ||
+          `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
         university: d.university || 'University Student',
         followers: d.followers_count ?? 0,
         following: d.following_count ?? 0,
@@ -238,17 +255,15 @@ export const api = {
       };
     },
     getPosts: async (username: string) => {
-      // First get the user's ID from their profile
       const profileRes = await apiClient.get(`/profiles/${username}`);
       const userId = profileRes.data.user_id;
-      // Use dedicated server-side endpoint for efficiency
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
       return res.data.map(transformPost);
     },
     update: async (data: any) => {
       let profile_picture = data.profile_picture;
       let cover_photo = data.cover_photo;
-      
+
       if (data.avatar) {
         const formData = new FormData();
         formData.append('file', data.avatar);
@@ -263,17 +278,14 @@ export const api = {
         cover_photo = uploadRes.data.url;
       }
 
-      const res = await apiClient.put('/profiles/me', {
+      await apiClient.put('/profiles/me', {
         full_name: data.fullName,
         bio: data.bio,
         university: data.university,
-        profile_picture: profile_picture,
-        cover_photo: cover_photo
+        profile_picture,
+        cover_photo,
       });
-      
-      // Profiles/me returns the profile object, but we need the user object for transformUser
-      // Let's refetch me or just handle it. 
-      // Actually, transformUser expects user structure. 
+
       const userRes = await apiClient.get('/users/me/');
       return transformUser(userRes.data);
     },
@@ -295,8 +307,10 @@ export const api = {
     },
     getSuggestions: async () => {
       const res = await apiClient.get('/search/users?q=');
-      return res.data.map(transformUser).filter((u: any) => u.id !== authStorage.getItem('user_id'));
-    }
+      return res.data
+        .map(transformUser)
+        .filter((u: any) => String(u.id) !== String(authStorage.getItem('user_id')));
+    },
   },
   groups: {
     getAll: async () => {
@@ -306,9 +320,11 @@ export const api = {
         name: g.name,
         description: g.description,
         memberCount: g.member_count || 0,
-        imageUrl: getFullUrl(g.cover_image) || `https://api.dicebear.com/7.x/identicon/svg?seed=${g.name}`,
+        imageUrl:
+          getFullUrl(g.cover_image) ||
+          `https://api.dicebear.com/7.x/identicon/svg?seed=${g.name}`,
         isJoined: false,
-        privacy: g.privacy
+        privacy: g.privacy,
       }));
     },
     getById: async (id: string) => {
@@ -319,10 +335,12 @@ export const api = {
         name: g.name,
         description: g.description,
         memberCount: g.member_count || 0,
-        imageUrl: getFullUrl(g.cover_image) || `https://api.dicebear.com/7.x/identicon/svg?seed=${g.name}`,
+        imageUrl:
+          getFullUrl(g.cover_image) ||
+          `https://api.dicebear.com/7.x/identicon/svg?seed=${g.name}`,
         isJoined: false,
         privacy: g.privacy,
-        creatorId: g.creator_id
+        creatorId: g.creator_id,
       };
     },
     getMembers: async (id: string) => {
@@ -331,7 +349,7 @@ export const api = {
     },
     join: async (id: string) => {
       const res = await apiClient.post(`/groups/${id}/join`);
-      return res.data; // { status: 'joined' | 'pending', message: string }
+      return res.data;
     },
     getRequests: async (id: string) => {
       const res = await apiClient.get(`/groups/${id}/requests/`);
@@ -353,7 +371,7 @@ export const api = {
         name: data.name,
         description: data.description,
         privacy: data.privacy,
-        cover_image: cover_image
+        cover_image,
       });
       return res.data;
     },
@@ -371,7 +389,7 @@ export const api = {
       }
       const res = await apiClient.post(`/groups/${id}/posts/`, {
         caption: data.caption,
-        image: imageUrl
+        image: imageUrl,
       });
       return transformPost(res.data);
     },
@@ -383,7 +401,9 @@ export const api = {
         const uploadRes = await apiClient.post('/upload/', formData);
         cover_url = uploadRes.data.url;
       }
-      const res = await apiClient.put(`/groups/${id}${cover_url ? `?cover_image=${encodeURIComponent(cover_url)}` : ''}`);
+      const res = await apiClient.put(
+        `/groups/${id}${cover_url ? `?cover_image=${encodeURIComponent(cover_url)}` : ''}`,
+      );
       return res.data;
     },
     updateMemberRole: async (groupId: string, userId: string, role: string) => {
@@ -393,13 +413,31 @@ export const api = {
     kickMember: async (groupId: string, userId: string) => {
       const res = await apiClient.delete(`/groups/${groupId}/members/${userId}`);
       return res.data;
-    }
+    },
   },
   search: {
     users: async (query: string) => {
       const res = await apiClient.get(`/search/users?q=${encodeURIComponent(query)}`);
       return res.data.map(transformUser);
-    }
+    },
+    posts: async (query: string) => {
+      const res = await apiClient.get(`/search/posts?q=${encodeURIComponent(query)}`);
+      return res.data.map(transformPost);
+    },
+    groups: async (query: string) => {
+      const res = await apiClient.get(`/search/groups?q=${encodeURIComponent(query)}`);
+      return res.data.map((g: any) => ({
+        id: g.id.toString(),
+        name: g.name,
+        description: g.description,
+        memberCount: g.member_count || 0,
+        imageUrl:
+          getFullUrl(g.cover_image) ||
+          `https://api.dicebear.com/7.x/identicon/svg?seed=${g.name}`,
+        isJoined: false,
+        privacy: g.privacy,
+      }));
+    },
   },
   friends: {
     getAll: async () => {
@@ -409,7 +447,7 @@ export const api = {
     sendRequest: async (userId: string) => {
       const res = await apiClient.post(`/friend-request/${userId}`);
       return res.data;
-    }
+    },
   },
   chats: {
     getAll: async () => {
@@ -417,9 +455,17 @@ export const api = {
       const currentUserId = authStorage.getItem('user_id');
       return res.data.map((c: any) => ({
         id: c.id.toString(),
-        partner: transformUser(c.participants.find((p: any) => p.id !== currentUserId) || c.participants[0]),
+        partner: transformUser(
+          c.participants.find((p: any) => String(p.id) !== String(currentUserId)) ||
+            c.participants[0],
+        ),
         lastMessage: c.messages?.[c.messages.length - 1]?.content || 'No messages yet',
-        timestamp: c.messages?.[c.messages.length - 1] ? new Date(c.messages[c.messages.length - 1].created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+        timestamp: c.messages?.[c.messages.length - 1]
+          ? new Date(c.messages[c.messages.length - 1].created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : '',
         unreadCount: 0,
       }));
     },
@@ -431,8 +477,11 @@ export const api = {
         imageUrl: getFullUrl(m.image_url),
         videoUrl: getFullUrl(m.video_url),
         senderId: m.sender_id,
-        timestamp: new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isRead: m.is_read
+        timestamp: new Date(m.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        isRead: m.is_read,
       }));
     },
     sendMessage: async (conversationId: string, content?: string, file?: File | null) => {
@@ -448,17 +497,17 @@ export const api = {
         else imageUrl = url;
       }
 
-      const res = await apiClient.post(`/conversations/${conversationId}/messages/`, { 
+      const res = await apiClient.post(`/conversations/${conversationId}/messages/`, {
         content,
         image_url: imageUrl,
-        video_url: videoUrl 
+        video_url: videoUrl,
       });
       return res.data;
     },
     createConversation: async (participantIds: string[], name?: string) => {
       const res = await apiClient.post('/conversations/', { participant_ids: participantIds, name });
       return res.data;
-    }
+    },
   },
   notifications: {
     getAll: async () => {
@@ -472,7 +521,7 @@ export const api = {
     markRead: async () => {
       const res = await apiClient.post('/notifications/read');
       return res.data;
-    }
+    },
   },
   reports: {
     create: async (data: { reason: string; postId?: number; commentId?: number }) => {
@@ -486,7 +535,7 @@ export const api = {
     resolve: async (id: number, status: string) => {
       const res = await apiClient.post(`/reports/${id}/resolve?status=${status}`);
       return res.data;
-    }
+    },
   },
   admin: {
     getStats: async () => {
@@ -504,7 +553,7 @@ export const api = {
     toggleActive: async (userId: string) => {
       const res = await apiClient.post(`/admin/users/${userId}/toggle-active`);
       return res.data;
-    }
+    },
   },
   stories: {
     getFeed: async () => {
@@ -514,10 +563,13 @@ export const api = {
         user: transformUser(s.user),
         content: s.content,
         imageUrl: getFullUrl(s.image_url),
-        timestamp: new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date(s.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         likesCount: s.likes?.length || 0,
         viewsCount: s.views?.length || 0,
-        isLiked: s.likes?.some((l: any) => l.user_id === authStorage.getItem('user_id')),
+        isLiked: s.likes?.some((l: any) => String(l.user_id) === String(authStorage.getItem('user_id'))),
       }));
     },
     create: async (data: any) => {
@@ -530,7 +582,7 @@ export const api = {
       }
       const res = await apiClient.post('/stories/', {
         content: data.content,
-        image_url: imageUrl
+        image_url: imageUrl,
       });
       return res.data;
     },
@@ -540,6 +592,6 @@ export const api = {
     like: async (id: string) => {
       const res = await apiClient.post(`/stories/${id}/like`);
       return res.data;
-    }
+    },
   },
 };

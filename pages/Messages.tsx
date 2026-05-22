@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Send, Phone, Video, MoreVertical, Search, ChevronLeft, User, Paperclip, Image as ImageIcon, X } from "lucide-react";
+import { Send, Search, Image as ImageIcon, X } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../services/api";
 import { authStorage } from "../utils/persistentStorage";
@@ -62,7 +63,7 @@ export const Messages = () => {
     queryKey: ["messages", selectedChatId],
     queryFn: () => api.chats.getMessages(selectedChatId!),
     enabled: !!selectedChatId,
-    refetchInterval: 5000, 
+    refetchInterval: 5000,
   });
 
   const sendMessageMutation = useMutation({
@@ -171,8 +172,8 @@ export const Messages = () => {
               key={chat.id}
               onClick={() => setSelectedChatId(chat.id)}
               className={`p-4 rounded-2xl flex gap-4 cursor-pointer transition-all relative ${
-                selectedChatId === chat.id 
-                ? "bg-white/10 shadow-lg" 
+                selectedChatId === chat.id
+                ? "bg-white/10 shadow-lg"
                 : "hover:bg-white/5"
               }`}
             >
@@ -208,40 +209,8 @@ export const Messages = () => {
       >
         {selectedChat ? (
           <>
-            <div className="h-20 px-6 border-b border-white/10 flex items-center justify-between backdrop-blur-md">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setSelectedChatId(null)}
-                  className="md:hidden p-2 text-white/40"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <img
-                  src={selectedChat.partner.avatarUrl || `https://ui-avatars.com/api/?name=${selectedChat.partner.fullName}`}
-                  alt="User"
-                  className="w-10 h-10 rounded-full object-cover border border-white/10"
-                />
-                <div>
-                  <h3 className="font-medium text-white text-sm">
-                    {selectedChat.partner.fullName}
-                  </h3>
-                  <p className="text-[10px] text-emerald-400">online</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button className="p-2.5 text-white/40 hover:text-white transition-colors">
-                  <Phone size={18} />
-                </button>
-                <button className="p-2.5 text-white/40 hover:text-white transition-colors">
-                  <Video size={18} />
-                </button>
-                <button className="p-2.5 text-white/40 hover:text-white transition-colors">
-                  <MoreVertical size={18} />
-                </button>
-              </div>
-            </div>
-
             <div className="flex-1 p-6 overflow-y-auto space-y-4 hide-scrollbar">
+
               <AnimatePresence mode="popLayout">
                 {messages?.map((msg: any) => (
                   <motion.div
@@ -283,7 +252,7 @@ export const Messages = () => {
                   ) : (
                     <img src={attachmentPreview} className="max-h-32 rounded-xl border border-white/10" />
                   )}
-                  <button 
+                  <button
                     onClick={clearAttachment}
                     className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full shadow-lg"
                   >
