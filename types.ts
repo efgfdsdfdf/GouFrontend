@@ -70,6 +70,8 @@ export interface Notification {
   message: string;
   timestamp: string;
   read: boolean;
+  postId?: string;
+  commentId?: string;
 }
 
 export interface Report {

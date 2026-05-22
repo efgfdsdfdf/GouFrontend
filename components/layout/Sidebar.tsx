@@ -35,7 +35,8 @@ export const Sidebar = () => {
   const { data: unreadData } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: api.notifications.getUnreadCount,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
   const unreadCount = unreadData?.count || 0;
 

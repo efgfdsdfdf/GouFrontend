@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
-import { Skeleton } from "../ui/Skeleton";
-import { Send, Heart } from "lucide-react";
+import { Send, Heart, CornerDownRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../../store";
 
@@ -18,6 +17,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   authorUsername,
 }) => {
   const [content, setContent] = useState("");
+  const [replyTarget, setReplyTarget] = useState<any | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
@@ -89,6 +89,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     },
     onSuccess: () => {
       setContent("");
+      setReplyTarget(null);
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
@@ -103,6 +104,28 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
   const likeCommentMutation = useMutation({
     mutationFn: (commentId: string) => api.posts.likeComment(commentId),
+    onMutate: async (commentId) => {
+      await queryClient.cancelQueries({ queryKey: ["comments", postId] });
+      const previousComments = queryClient.getQueryData(["comments", postId]);
+      queryClient.setQueryData(["comments", postId], (old: any[]) =>
+        old?.map((comment) => {
+          if (String(comment.id) !== String(commentId)) return comment;
+          const likes = comment.likes || [];
+          const isLiked = likes.some((l: any) => String(l.id) === String(user?.id));
+          return {
+            ...comment,
+            likes: isLiked
+              ? likes.filter((l: any) => String(l.id) !== String(user?.id))
+              : [...likes, { id: user?.id }],
+            likes_count: Math.max(0, (comment.likes_count || 0) + (isLiked ? -1 : 1)),
+          };
+        }),
+      );
+      return { previousComments };
+    },
+    onError: (_err, _commentId, context: any) => {
+      queryClient.setQueryData(["comments", postId], context?.previousComments);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["comments", postId] });
     },
@@ -111,17 +134,44 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || createCommentMutation.isPending) return;
-    createCommentMutation.mutate(content);
+    const trimmed = content.trim();
+    const replyText = replyTarget
+      ? `@${replyTarget.user?.username || "user"} ${trimmed}`
+      : trimmed;
+    createCommentMutation.mutate(replyText);
+  };
+
+  const startReply = (comment: any) => {
+    setReplyTarget(comment);
+    setContent((current) => current.replace(/^@\S+\s*/, ""));
   };
 
   return (
     <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
+      {replyTarget && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs text-white">
+          <div className="flex min-w-0 items-center gap-2">
+            <CornerDownRight size={15} className="text-primary shrink-0" />
+            <span className="truncate">
+              Replying to @{replyTarget.user?.username}: {replyTarget.content}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setReplyTarget(null)}
+            className="h-7 w-7 rounded-lg bg-white/5 flex items-center justify-center text-white/60 hover:text-white"
+            aria-label="Cancel reply"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
       <form onSubmit={handleSubmit} className="flex gap-3">
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Write a comment..."
+          placeholder={replyTarget ? `Reply to @${replyTarget.user?.username}` : "Write a comment..."}
           className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-5 py-3 text-sm text-zinc-100 focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-500"
         />
         <button
@@ -135,10 +185,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 
       <div className="space-y-5 pb-4">
         {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-12 w-full rounded-2xl" />
-            <Skeleton className="h-12 w-full rounded-2xl" />
-          </div>
+          <div className="h-12" />
         ) : (
           comments?.map((comment: any) => (
             <div key={comment.id} className="flex gap-3 group">
@@ -178,6 +225,14 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
                     <span className="text-[10px] font-black text-zinc-500">{comment.likes_count || 0}</span>
                   </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => startReply(comment)}
+                  className="ml-2 mt-1 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-zinc-500 hover:text-primary transition-colors"
+                >
+                  <CornerDownRight size={12} />
+                  Reply
+                </button>
               </div>
             </div>
           ))

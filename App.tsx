@@ -28,12 +28,11 @@ import { useAuthStore } from "./store";
 import { API_URL, api } from "./services/api";
 import { authStorage } from "./utils/persistentStorage";
 import { ToastProvider, useToast } from "./components/ui/Toast";
-import { GoUnionLoader } from "./components/ui/GoUnionLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60, // 1 minute
+      staleTime: 1000 * 20,
       refetchOnWindowFocus: false,
     },
   },
@@ -96,44 +95,58 @@ const AppStartupSplash = () => {
 const useWebSocket = () => {
   const { user, isAuthenticated } = useAuthStore();
   const { toast } = useToast();
+  const reconnectTimer = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
     const currentApiUrl = API_URL || 'http://127.0.0.1:8001';
-    const wsUrl = currentApiUrl.replace('http', 'ws') + `/ws/${user.id}`;
-    const socket = new WebSocket(wsUrl);
+    const wsUrl = currentApiUrl.replace('http', 'ws') + `/conversations/ws/${user.id}`;
+    let socket: WebSocket | null = null;
+    let closedByCleanup = false;
 
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'new_message') {
-          const msg = data.message;
-          // Invalidate affected queries for instant refresh
-          queryClient.invalidateQueries({ queryKey: ["messages", msg.conversation_id.toString()] });
-          queryClient.invalidateQueries({ queryKey: ["chats"] });
-          queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          if (String(msg.sender_id) !== String(user.id)) {
-            toast("New message", "info");
+    const connect = () => {
+      socket = new WebSocket(wsUrl);
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'new_message') {
+            const msg = data.message;
+            queryClient.invalidateQueries({ queryKey: ["messages", msg.conversation_id.toString()] });
+            queryClient.invalidateQueries({ queryKey: ["chats"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            if (String(msg.sender_id) !== String(user.id)) {
+              toast("New message", "info");
+            }
           }
-        }
 
-        if (data.type === 'notification' || data.type === 'new_notification') {
-          queryClient.invalidateQueries({ queryKey: ["notifications"] });
-          queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
-          toast(data.message || "New notification", "info");
+          if (data.type === 'notification' || data.type === 'new_notification') {
+            queryClient.invalidateQueries({ queryKey: ["notifications"] });
+            queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+            queryClient.invalidateQueries({ queryKey: ["feed"] });
+            queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+            toast(data.message || "New notification", "info");
+          }
+        } catch (e) {
+          console.error("WS Message error", e);
         }
-      } catch (e) {
-        console.error("WS Message error", e);
-      }
+      };
+
+      socket.onclose = () => {
+        if (closedByCleanup) return;
+        reconnectTimer.current = window.setTimeout(connect, 3000);
+      };
     };
 
-    socket.onclose = () => {
-      console.log("WS Disconnected. Reconnecting in 5s...");
-    };
+    connect();
 
-    return () => socket.close();
+    return () => {
+      closedByCleanup = true;
+      if (reconnectTimer.current) window.clearTimeout(reconnectTimer.current);
+      socket?.close();
+    };
   }, [isAuthenticated, user?.id, toast]);
 };
 
@@ -147,7 +160,8 @@ const useNotificationPopups = () => {
     queryKey: ["notifications"],
     queryFn: api.notifications.getAll,
     enabled: isAuthenticated,
-    refetchInterval: 15000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {
@@ -168,6 +182,11 @@ const useNotificationPopups = () => {
     unread.forEach((n: any) => {
       if (seenIds.current.has(n.id)) return;
       seenIds.current.add(n.id);
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+      if (n.postId) {
+        queryClient.invalidateQueries({ queryKey: ["comments", String(n.postId)] });
+      }
       toast(`${n.actor?.username || "Someone"} ${n.message}`, "info");
     });
   }, [isAuthenticated, notifications, toast]);
@@ -177,7 +196,6 @@ const AppRoutes = () => {
   const { isAuthenticated } = useAuthStore();
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
-  const [showPageLoader, setShowPageLoader] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -200,17 +218,9 @@ const AppRoutes = () => {
     
     const timer = window.setTimeout(() => {
       setShowStartupSplash(false);
-    }, 850);
+    }, 350);
     return () => window.clearTimeout(timer);
   }, []);
-
-  useEffect(() => {
-    setShowPageLoader(true);
-    const timer = window.setTimeout(() => {
-      setShowPageLoader(false);
-    }, 520);
-    return () => window.clearTimeout(timer);
-  }, [location.pathname]);
 
   useWebSocket();
   useNotificationPopups();
@@ -239,7 +249,6 @@ const AppRoutes = () => {
 
   return (
     <>
-      {showPageLoader && <GoUnionLoader message="Preparing page..." />}
       <Routes>
         <Route
           path="/login"

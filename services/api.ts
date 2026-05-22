@@ -171,6 +171,8 @@ const notificationMessage = (notification: any) => {
   switch (notification.type) {
     case 'like':
       return 'liked your post.';
+    case 'like_comment':
+      return 'liked your comment.';
     case 'comment':
       return 'commented on your post.';
     case 'follow':
@@ -199,6 +201,8 @@ export const transformNotification = (notification: any): Notification => {
       ? new Date(createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : notification.timestamp || 'Now',
     read: notification.read ?? notification.is_read ?? false,
+    postId: notification.post_id?.toString(),
+    commentId: notification.comment_id?.toString(),
   };
 };
 

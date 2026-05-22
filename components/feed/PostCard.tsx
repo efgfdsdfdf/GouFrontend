@@ -31,12 +31,39 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [isReporting, setIsReporting] = React.useState(false);
   const [reportReason, setReportReason] = React.useState("");
 
+  const updatePostAcrossLists = React.useCallback(
+    (updater: (p: Post) => Post) => {
+      queryClient.setQueriesData({ queryKey: ["feed"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any[]) => page.map(updater)),
+        };
+      });
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any[]) => page.map(updater)),
+        };
+      });
+      queryClient.setQueryData(["profile-posts", post.author.username], (old: any) =>
+        Array.isArray(old) ? old.map(updater) : old,
+      );
+      if (post.groupId) {
+        queryClient.setQueryData(["group-posts", post.groupId], (old: any) =>
+          Array.isArray(old) ? old.map(updater) : old,
+        );
+      }
+    },
+    [post.author.username, post.groupId, queryClient],
+  );
+
   const likeMutation = useMutation({
     mutationFn: () => api.posts.like(post.id),
     onMutate: async () => {
-      const feedKey = ["feed"];
-      await queryClient.cancelQueries({ queryKey: feedKey });
-      const previousFeed = queryClient.getQueryData(feedKey);
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: ["discover-reels"] });
 
       const updatePost = (p: Post) => {
         if (p.id === post.id) {
@@ -49,18 +76,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
         return p;
       };
 
-      queryClient.setQueryData(feedKey, (old: any) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page: any) => page.map(updatePost)),
-        };
-      });
-
-      return { previousFeed };
+      updatePostAcrossLists(updatePost);
     },
-    onError: (err, newTodo, context) => {
-      queryClient.setQueryData(["feed"], context?.previousFeed);
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -97,6 +117,26 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const isModerator =
     currentUser?.role === "admin" || currentUser?.role === "moderator";
   const isOwner = currentUser?.id === post.author.id;
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/profile/${post.author.username}`;
+    const text = post.content || `Post from @${post.author.username}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "GoUnion post",
+          text,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
+        toast("Post link copied", "success");
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        toast("Unable to share post", "error");
+      }
+    }
+  };
 
   return (
     <motion.article
@@ -211,7 +251,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
               <MessageCircle size={20} />
               <span className="text-sm font-medium">{post.comments}</span>
             </button>
-            <button className="flex items-center gap-2 text-white/60 hover:text-emerald-400 transition-colors">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 text-white/60 hover:text-emerald-400 transition-colors"
+            >
               <Share2 size={20} />
             </button>
           </div>

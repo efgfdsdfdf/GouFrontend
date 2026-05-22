@@ -33,7 +33,8 @@ export const Messages = () => {
   const { data: chats = [] } = useQuery({
     queryKey: ["chats"],
     queryFn: api.chats.getAll,
-    refetchInterval: 10000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const createChatMutation = useMutation({
@@ -82,7 +83,8 @@ export const Messages = () => {
     queryKey: ["messages", selectedChatId],
     queryFn: () => api.chats.getMessages(selectedChatId!),
     enabled: !!selectedChatId,
-    refetchInterval: 3000,
+    refetchInterval: 2500,
+    refetchOnWindowFocus: true,
   });
 
   useEffect(() => {

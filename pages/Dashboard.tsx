@@ -162,11 +162,7 @@ export const Dashboard = () => {
               className="py-12 flex flex-col items-center justify-center"
             >
               {isFetchingNextPage ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-white/20 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-2 h-2 bg-white/20 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-2 h-2 bg-white/20 rounded-full animate-bounce"></div>
-                </div>
+                <div className="h-4 w-full" />
               ) : hasNextPage ? (
                 <div className="h-4 w-full" />
               ) : (

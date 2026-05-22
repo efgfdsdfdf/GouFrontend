@@ -21,7 +21,8 @@ export const TopNav = () => {
   const { data: notifications } = useQuery({
     queryKey: ["notifications"],
     queryFn: api.notifications.getAll,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: searchResults, isLoading: isSearching } = useQuery({

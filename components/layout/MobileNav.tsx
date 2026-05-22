@@ -29,7 +29,8 @@ export const MobileNav = () => {
   const { data: unreadData } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: api.notifications.getUnreadCount,
-    refetchInterval: 30000,
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
     enabled: !!user,
   });
   const unreadCount = unreadData?.count || 0;
