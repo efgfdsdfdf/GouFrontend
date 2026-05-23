@@ -24,11 +24,19 @@
       });
 
       // Force immediate Service Worker registration
+      window.swError = null;
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(reg => console.log('SW Registration successful:', reg))
-            .catch(err => console.error('SW Registration failed:', err));
+            .then(reg => {
+              console.log('SW Registration successful:', reg);
+              // Force update manually if stuck
+              reg.update();
+            })
+            .catch(err => {
+              console.error('SW Registration failed:', err);
+              window.swError = err.toString();
+            });
         });
       }
     </script>

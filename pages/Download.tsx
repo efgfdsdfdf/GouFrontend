@@ -103,6 +103,7 @@ export const DownloadPage = () => {
           <p>isInstalled: {isInstalled ? '✅ True' : '❌ False'}</p>
           <p>SW Support: {'serviceWorker' in navigator ? '✅ Yes' : '❌ No'}</p>
           <p>SW Controller: {navigator.serviceWorker?.controller ? '✅ Active' : '❌ None (Waiting/Failed)'}</p>
+          <p>SW Error: {(window as any).swError || 'None'}</p>
           <p>Display Mode: {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
         </div>
 
