@@ -285,7 +285,11 @@ const AppRoutes = () => {
     return <AppStartupSplash />;
   }
 
-  if (!isAuthenticated && !PUBLIC_ROUTES.includes(location.pathname)) {
+  const currentPath = location.pathname.endsWith('/') && location.pathname !== '/' 
+    ? location.pathname.slice(0, -1) 
+    : location.pathname;
+
+  if (!isAuthenticated && !PUBLIC_ROUTES.includes(currentPath)) {
     // Check if it's a password reset link hitting the root or an unknown URL
     const hasResetToken = window.location.hash.includes("type=recovery") || 
                           window.location.hash.includes("access_token=") || 

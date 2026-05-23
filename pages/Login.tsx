@@ -211,15 +211,25 @@ export const Login = () => {
           </form>
         </div>
 
-        <div className="mt-12 flex justify-center gap-12 text-[#222]">
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} className="text-primary opacity-30" />
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Real-time</span>
+        <div className="mt-12 flex flex-col items-center gap-6">
+          <div className="flex justify-center gap-12 text-[#222]">
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} className="text-primary opacity-30" />
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Real-time</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Zap size={14} className="text-accent opacity-30" />
+              <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Encrypted</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Zap size={14} className="text-accent opacity-30" />
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-30">Encrypted</span>
-          </div>
+          
+          <Link 
+            to="/download" 
+            className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors bg-white/5 px-6 py-3 rounded-xl border border-white/5 hover:border-white/20"
+          >
+            <ShieldCheck size={16} />
+            <span className="text-xs font-bold uppercase tracking-widest">Install Desktop / Mobile App</span>
+          </Link>
         </div>
       </motion.div>
     </div>
