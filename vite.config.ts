@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => {
         react(),
         tailwindcss(),
         VitePWA({
-          registerType: 'prompt',
-          injectRegister: 'script',
+          registerType: 'autoUpdate',
+          injectRegister: 'auto',
           includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'favicon.png'],
           manifest: {
             name: 'GoUnion',
@@ -47,6 +47,8 @@ export default defineConfig(({ mode }) => {
             ]
           },
           workbox: {
+            clientsClaim: true,
+            skipWaiting: true,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
             navigateFallback: '/index.html',
             navigateFallbackAllowlist: [/^(?!\/__).*/],
