@@ -14,6 +14,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { useAuthStore } from "../store";
+import { usePwaStore } from "../store/pwaStore";
 import { api } from "../services/api";
 
 export const Login = () => {
@@ -223,13 +224,24 @@ export const Login = () => {
             </div>
           </div>
           
-          <Link 
-            to="/download" 
+          <button 
+            onClick={async () => {
+              const pwaState = usePwaStore.getState();
+              if (pwaState.installPrompt) {
+                pwaState.installPrompt.prompt();
+                const { outcome } = await pwaState.installPrompt.userChoice;
+                pwaState.clearInstallPrompt();
+              } else if (pwaState.isInstalled) {
+                alert("The app is already installed on your device!");
+              } else {
+                window.location.href = "/download";
+              }
+            }}
             className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors bg-white/5 px-6 py-3 rounded-xl border border-white/5 hover:border-white/20"
           >
             <ShieldCheck size={16} />
             <span className="text-xs font-bold uppercase tracking-widest">Install Desktop / Mobile App</span>
-          </Link>
+          </button>
         </div>
       </motion.div>
     </div>
