@@ -24,7 +24,10 @@ import { GroupDetails } from "./pages/GroupDetails";
 import { AdminPanel } from "./pages/AdminPanel";
 import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
+import { DownloadPage } from "./pages/Download";
 import { useAuthStore } from "./store";
+import { usePwaStore } from "./store/pwaStore";
+import { PwaUpdater } from "./components/pwa/PwaUpdater";
 import { API_URL, api } from "./services/api";
 import { authStorage } from "./utils/persistentStorage";
 import { ToastProvider, useToast } from "./components/ui/Toast";
@@ -207,6 +210,31 @@ const AppRoutes = () => {
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
   const [showPageDots, setShowPageDots] = useState(false);
+  const { setInstallPrompt, setInstalled } = usePwaStore();
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    const handleAppInstalled = () => {
+      setInstalled(true);
+    };
+
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setInstalled(true);
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [setInstallPrompt, setInstalled]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -250,6 +278,7 @@ const AppRoutes = () => {
     "/login",
     "/forgot-password",
     "/reset-password",
+    "/download",
   ];
 
   if (showStartupSplash) {
@@ -271,11 +300,13 @@ const AppRoutes = () => {
   return (
     <>
       {showPageDots && <PageLoadingDots />}
+      <PwaUpdater />
       <Routes>
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/" /> : <Login />}
         />
+        <Route path="/download" element={<DownloadPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route
