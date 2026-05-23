@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Download, CheckCircle, Smartphone, Monitor, ChevronRight } from 'lucide-react';
+import { Download, CheckCircle, Smartphone, Monitor } from 'lucide-react';
 import { usePwaStore } from '../store/pwaStore';
 
 export const DownloadPage = () => {
@@ -95,16 +95,6 @@ export const DownloadPage = () => {
               )}
             </div>
           </div>
-        </div>
-
-        <div className="fixed bottom-4 left-4 p-4 bg-black/80 border border-white/20 text-white/50 text-[10px] font-mono text-left z-50 rounded-lg max-w-sm pointer-events-none">
-          <p>Debug Info:</p>
-          <p>installPrompt: {installPrompt ? '✅ Captured' : '❌ Null'}</p>
-          <p>isInstalled: {isInstalled ? '✅ True' : '❌ False'}</p>
-          <p>SW Support: {'serviceWorker' in navigator ? '✅ Yes' : '❌ No'}</p>
-          <p>SW Controller: {navigator.serviceWorker?.controller ? '✅ Active' : '❌ None (Waiting/Failed)'}</p>
-          <p>SW Error: {(window as any).swError || 'None'}</p>
-          <p>Display Mode: {window.matchMedia('(display-mode: standalone)').matches ? 'Standalone' : 'Browser'}</p>
         </div>
 
       </motion.div>
