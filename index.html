@@ -18,11 +18,19 @@
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         window.deferredPWAInstallPrompt = e;
-        // If React store is already loaded, update it
         if (window.updatePwaStorePrompt) {
           window.updatePwaStorePrompt(e);
         }
       });
+
+      // Force immediate Service Worker registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => console.log('SW Registration successful:', reg))
+            .catch(err => console.error('SW Registration failed:', err));
+        });
+      }
     </script>
 </head>
   <body>
