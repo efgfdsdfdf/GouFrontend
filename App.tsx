@@ -210,31 +210,14 @@ const AppRoutes = () => {
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
   const [showPageDots, setShowPageDots] = useState(false);
-  const { setInstallPrompt, setInstalled } = usePwaStore();
+  const { setInstalled } = usePwaStore();
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setInstallPrompt(e);
-    };
-
-    const handleAppInstalled = () => {
-      setInstalled(true);
-    };
-
-    // Check if already installed
+    // Check if already installed via display-mode
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setInstalled(true);
     }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
-  }, [setInstallPrompt, setInstalled]);
+  }, [setInstalled]);
 
   useEffect(() => {
     const checkAuth = async () => {
