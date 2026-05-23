@@ -16,8 +16,8 @@ export default defineConfig(({ mode }) => {
         tailwindcss(),
         VitePWA({
           registerType: 'prompt',
-          injectRegister: 'auto',
-          includeAssets: ['pwa-192x192.png', 'pwa-512x512.png'],
+          injectRegister: 'script',
+          includeAssets: ['pwa-192x192.png', 'pwa-512x512.png', 'favicon.png'],
           manifest: {
             name: 'GoUnion',
             short_name: 'GoUnion',
