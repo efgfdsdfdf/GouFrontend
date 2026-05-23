@@ -298,7 +298,7 @@ const AppRoutes = () => {
     if (hasResetToken) {
       return <Navigate to={`/reset-password${window.location.search}${window.location.hash}`} replace />;
     }
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/download" replace />;
   }
 
   return (
