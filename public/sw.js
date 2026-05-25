@@ -1,3 +1,5 @@
+const CACHE_VERSION = 'v2'; // Force SW update
+
 self.addEventListener("push", (event) => {
   if (event.data) {
     let data = {};
@@ -10,8 +12,8 @@ self.addEventListener("push", (event) => {
     const title = data.title || "New Notification";
     const options = {
       body: data.body || "You have a new message.",
-      icon: data.icon || "/icon-192x192.png",
-      badge: data.badge || "/icon-192x192.png",
+      icon: data.icon || "/pwa-192x192.png",
+      badge: data.badge || "/pwa-192x192.png",
       vibrate: [200, 100, 200],
       data: {
         url: data.url || "/",

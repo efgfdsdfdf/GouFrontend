@@ -29,6 +29,7 @@ export const Messages = () => {
   const queryAvatar = searchParams.get("avatar") || "";
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
@@ -152,6 +153,7 @@ export const Messages = () => {
     setAttachment(null);
     setAttachmentPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -470,7 +472,7 @@ export const Messages = () => {
                             <ImageIcon size={20} />
                           </button>
                           <button
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => cameraInputRef.current?.click()}
                             className="h-11 w-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
                             aria-label="Attach using camera"
                           >
@@ -482,6 +484,13 @@ export const Messages = () => {
                   </div>
                   <input
                     ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    accept="image/*,video/*,application/pdf"
+                  />
+                  <input
+                    ref={cameraInputRef}
                     type="file"
                     className="hidden"
                     onChange={handleFileSelect}

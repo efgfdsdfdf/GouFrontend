@@ -12,7 +12,7 @@ export const API_URL =
 // Create Axios instance
 export const apiClient = axios.create({
   baseURL: API_URL,
-  timeout: 15000,
+  timeout: 60000,
 });
 
 // Add interceptor to attach access token

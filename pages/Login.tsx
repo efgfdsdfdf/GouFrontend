@@ -64,7 +64,7 @@ export const Login = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-accent/20 rounded-full blur-[120px] opacity-40 animate-pulse" />
       </div>
 
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.15] mix-blend-overlay pointer-events-none" />
+      <div className="absolute inset-0 opacity-[0.15] mix-blend-overlay pointer-events-none" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

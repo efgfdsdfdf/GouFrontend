@@ -140,7 +140,7 @@ const useWebSocket = () => {
                 try {
                   new Notification("GoUnion", {
                     body: "You have a new message",
-                    icon: '/icon-192x192.png',
+                    icon: '/pwa-192x192.png',
                     tag: `gounion-msg-${Date.now()}`,
                   });
                 } catch {}
@@ -247,8 +247,8 @@ const useNotificationPopups = () => {
       try {
         const n = new Notification(title, {
           body,
-          icon: '/icon-192x192.png',
-          badge: '/icon-192x192.png',
+          icon: '/pwa-192x192.png',
+          badge: '/pwa-192x192.png',
           tag: `gounion-${Date.now()}`,
           vibrate: [200, 100, 200],
         });
