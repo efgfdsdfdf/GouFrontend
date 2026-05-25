@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Heart, MessageCircle, UserPlus, X } from "lucide-react";
 
@@ -24,6 +25,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onMarkRead,
   onItemClick,
 }) => {
+  const navigate = useNavigate();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const getIcon = (type: string) => {
@@ -128,7 +130,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
       <div className="p-4 bg-[#0a0a0c]/50 text-center">
         <button
-          onClick={onClose}
+          onClick={() => {
+            onClose();
+            navigate("/notifications");
+          }}
           className="text-[10px] font-black text-zinc-500 uppercase tracking-widest hover:text-white transition-colors"
         >
           View All History

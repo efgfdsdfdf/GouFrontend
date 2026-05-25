@@ -105,6 +105,22 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
     mutationFn: () => api.posts.delete(post.id),
     onSuccess: () => {
       toast("Post deleted successfully", "success");
+      queryClient.setQueriesData({ queryKey: ["feed"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return { ...old, pages: old.pages.map((page: any[]) => page.filter((item) => item.id !== post.id)) };
+      });
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return { ...old, pages: old.pages.map((page: any[]) => page.filter((item) => item.id !== post.id)) };
+      });
+      queryClient.setQueryData(["profile-posts", post.author.username], (old: any) =>
+        Array.isArray(old) ? old.filter((item) => item.id !== post.id) : old,
+      );
+      if (post.groupId) {
+        queryClient.setQueryData(["group-posts", post.groupId], (old: any) =>
+          Array.isArray(old) ? old.filter((item) => item.id !== post.id) : old,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
       queryClient.invalidateQueries({ queryKey: ["profile-posts", post.author.username] });

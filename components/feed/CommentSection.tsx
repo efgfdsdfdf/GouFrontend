@@ -166,21 +166,26 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           </button>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex gap-3">
-        <input
-          type="text"
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <textarea
+          rows={2}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={replyTarget ? `Reply to @${replyTarget.user?.username}` : "Write a comment..."}
-          className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-5 py-3 text-sm text-zinc-100 focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-500"
+          className="w-full resize-none bg-white/10 border border-white/10 rounded-2xl px-5 py-3 text-sm text-zinc-100 focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-500"
         />
-        <button
-          type="submit"
-          disabled={!content.trim() || createCommentMutation.isPending}
-          className="w-12 h-12 flex items-center justify-center bg-violet-600 text-white rounded-2xl hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
-        >
-          <Send size={20} />
-        </button>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="submit"
+            disabled={!content.trim() || createCommentMutation.isPending}
+            className="w-28 h-12 flex items-center justify-center bg-violet-600 text-white rounded-2xl hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
+          >
+            <Send size={20} />
+          </button>
+          <span className="text-xs text-white/40">
+            {comments?.length ?? 0} comment{comments?.length === 1 ? "" : "s"}
+          </span>
+        </div>
       </form>
 
       <div className="space-y-5 pb-4">

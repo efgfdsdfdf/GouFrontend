@@ -71,9 +71,9 @@ export const Messages = () => {
   });
 
   useEffect(() => {
-    if (!isDesktop || selectedChatId || !chats.length) return;
+    if (!isDesktop || selectedChatId || !chats.length || userIdFromQuery) return;
     setSelectedChatId(chats[0].id);
-  }, [chats, isDesktop, selectedChatId]);
+  }, [chats, isDesktop, selectedChatId, userIdFromQuery]);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 768px)");

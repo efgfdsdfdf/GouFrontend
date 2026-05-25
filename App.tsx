@@ -141,7 +141,9 @@ const useWebSocket = () => {
             queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
             queryClient.invalidateQueries({ queryKey: ["feed"] });
             queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
-            toast(data.message || "New notification", "info");
+            if (!window.location.pathname.startsWith("/notifications")) {
+              toast(data.message || "New notification", "info");
+            }
           }
         } catch (e) {
           console.error("WS Message error", e);
@@ -167,6 +169,7 @@ const useWebSocket = () => {
 const useNotificationPopups = () => {
   const { isAuthenticated } = useAuthStore();
   const { toast } = useToast();
+  const location = useLocation();
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
 
@@ -186,7 +189,7 @@ const useNotificationPopups = () => {
     }
 
     const unread = notifications.filter((n: any) => !n.read);
-    const newNotifications = unread.filter((n: any) => !seenIds.current.has(n.id));
+    const isNotificationsPage = location.pathname.startsWith("/notifications");
 
     if (!initialized.current) {
       unread.forEach((n: any) => seenIds.current.add(n.id));
@@ -194,6 +197,12 @@ const useNotificationPopups = () => {
       return;
     }
 
+    if (isNotificationsPage) {
+      unread.forEach((n: any) => seenIds.current.add(n.id));
+      return;
+    }
+
+    const newNotifications = unread.filter((n: any) => !seenIds.current.has(n.id));
     if (newNotifications.length === 0) return;
 
     newNotifications.forEach((n: any) => {
@@ -211,7 +220,7 @@ const useNotificationPopups = () => {
     } else {
       toast(`You have ${newNotifications.length} new notifications.`, "info");
     }
-  }, [isAuthenticated, notifications, toast]);
+  }, [isAuthenticated, notifications, toast, location.pathname]);
 };
 
 const AppRoutes = () => {

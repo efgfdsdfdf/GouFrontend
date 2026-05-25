@@ -63,6 +63,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   }, [isOpen, currentIndex]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    if (stories.length === 0) {
+      setCurrentIndex(0);
+      setProgress(0);
+      return;
+    }
+    setCurrentIndex((current) => Math.min(current, stories.length - 1));
+  }, [isOpen, stories.length]);
+
+  useEffect(() => {
     if (progress >= 100 && isOpen) {
       if (currentIndex < stories.length - 1) {
         setCurrentIndex((prev) => prev + 1);
