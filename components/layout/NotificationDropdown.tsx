@@ -26,7 +26,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onItemClick,
 }) => {
   const navigate = useNavigate();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadNotifications = notifications.filter((n) => !n.read);
+  const unreadCount = unreadNotifications.length;
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -78,15 +79,15 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       </div>
 
       <div className="max-h-[min(70vh,430px)] overflow-y-auto custom-scrollbar">
-        {notifications.length > 0 ? (
-          notifications.map((n) => (
+        {unreadNotifications.length > 0 ? (
+          unreadNotifications.map((n) => (
             <div
               key={n.id}
               onClick={(e) => {
                 e.preventDefault();
                 onItemClick(n);
               }}
-              className={`p-5 border-b border-white/5 flex gap-4 hover:bg-white/[0.04] transition-all cursor-pointer relative group active:scale-[0.98] ${!n.read ? "bg-primary/[0.03]" : ""}`}
+              className={`p-5 border-b border-white/5 flex gap-4 hover:bg-white/[0.04] transition-all cursor-pointer relative group active:scale-[0.98] bg-primary/[0.03]`}
             >
               <div className="relative shrink-0">
                 <img
@@ -111,9 +112,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 </span>
               </div>
 
-              {!n.read && (
-                <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0 animate-pulse" />
-              )}
+              <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 shrink-0 animate-pulse" />
             </div>
           ))
         ) : (

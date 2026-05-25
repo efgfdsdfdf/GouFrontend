@@ -359,7 +359,17 @@ export const Messages = () => {
                 />
                 <Link to={`/profile/${selectedChat.partner.username}`} className="min-w-0 flex-1">
                   <p className="text-[15px] font-medium text-white truncate">{selectedChat.partner.fullName}</p>
-                  <p className="text-xs text-white/40 truncate">tap for profile</p>
+                  <p className="text-xs truncate transition-colors">
+                    {selectedChat.partner.isOnline ? (
+                      <span className="text-green-500 font-medium flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
+                      </span>
+                    ) : selectedChat.partner.lastSeen ? (
+                      <span className="text-white/40">Last seen {selectedChat.partner.lastSeen}</span>
+                    ) : (
+                      <span className="text-white/40">Offline • Tap for profile</span>
+                    )}
+                  </p>
                 </Link>
                 <button
                   onClick={inviteContacts}
@@ -386,7 +396,6 @@ export const Messages = () => {
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                          style={{ contentVisibility: 'auto', containIntrinsicSize: '60px' }}
                         >
                           <div
                             className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-md border ${

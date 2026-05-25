@@ -7,6 +7,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { ErrorBoundary } from "./components/ui/ErrorBoundary";
 import { Sidebar } from "./components/layout/Sidebar";
 import { RightSidebar } from "./components/layout/RightSidebar";
 import { TopNav } from "./components/layout/TopNav";
@@ -185,11 +186,51 @@ const useNotificationPopups = () => {
   const initialized = useRef(false);
   const permissionAsked = useRef(false);
 
-  // Request notification permission once authenticated
+  // Request notification permission and subscribe to Push Manager
   useEffect(() => {
-    if (isAuthenticated && !permissionAsked.current && 'Notification' in window && Notification.permission === 'default') {
+    const subscribeToPush = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js');
+          console.log('Service Worker registered for push notifications.');
+
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            // Check if already subscribed
+            let subscription = await registration.pushManager.getSubscription();
+            if (!subscription) {
+              // Convert VAPID key to Uint8Array (Mock VAPID key for now, backend must provide the real one)
+              const publicVapidKey = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLcg0zTpqhF8';
+              const urlBase64ToUint8Array = (base64String: string) => {
+                const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                const rawData = window.atob(base64);
+                return new Uint8Array([...rawData].map(char => char.charCodeAt(0)));
+              };
+
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(publicVapidKey),
+              });
+            }
+
+            // Send subscription to backend
+            try {
+              // await api.notifications.subscribePush(subscription);
+              console.log('Push subscription ready:', subscription);
+            } catch (e) {
+              console.error('Failed to send push subscription to backend', e);
+            }
+          }
+        } catch (error) {
+          console.error('Service Worker registration or push subscription failed:', error);
+        }
+      }
+    };
+
+    if (isAuthenticated && !permissionAsked.current) {
       permissionAsked.current = true;
-      Notification.requestPermission();
+      subscribeToPush();
     }
   }, [isAuthenticated]);
 
@@ -358,10 +399,11 @@ const AppRoutes = () => {
   }
 
   return (
-    <>
-      {showPageDots && <PageLoadingDots />}
-      <PwaUpdater />
-      <Routes>
+    <ErrorBoundary>
+      <>
+        {showPageDots && <PageLoadingDots />}
+        <PwaUpdater />
+        <Routes>
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/" /> : <Login />}
@@ -452,8 +494,9 @@ const AppRoutes = () => {
           }
         />
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </>
+        </Routes>
+      </>
+    </ErrorBoundary>
   );
 };
 

@@ -103,7 +103,7 @@ export const transformUser = (user: any) => {
     username,
     fullName: profile.full_name || user.full_name || user.name || username,
     avatarUrl:
-      getFullUrl(profile.profile_picture || user.profile_picture || user.avatarUrl) ||
+      getFullUrl(profile.profile_picture || profile.profile_picture_url || user.profile_picture || user.profile_picture_url || user.avatarUrl || user.avatar_url || profile.avatarUrl || profile.avatar_url) ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
     university: profile.university || user.university || 'University Student',
     followers: user.followers_count ?? user.followers ?? 0,

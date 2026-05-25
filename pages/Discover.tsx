@@ -157,7 +157,6 @@ export const Discover = () => {
             <section
               key={reel.id}
               className="snap-start snap-always h-full w-full relative bg-black flex items-center justify-center overflow-hidden"
-              style={{ contentVisibility: 'auto', containIntrinsicSize: '100vh' }}
             >
               {/* Background Blur for non-16:9 videos */}
               <div 
