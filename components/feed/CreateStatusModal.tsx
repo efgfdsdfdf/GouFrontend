@@ -4,6 +4,7 @@ import { X, Camera, Send } from "lucide-react";
 import { useAuthStore } from "../../store";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../services/api";
+import { useToast } from "../ui/Toast";
 
 interface CreateStatusModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
   const [content, setContent] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const createMutation = useMutation({
     mutationFn: api.stories.create,
@@ -29,7 +31,13 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
       setImage(null);
       setPreview(null);
       onClose();
+      toast("Story posted successfully!", "success");
     },
+    onError: (err: any) => {
+      console.error("Error creating story:", err);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message || "Failed to create story";
+      toast(msg, "error");
+    }
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {

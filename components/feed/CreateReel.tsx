@@ -4,6 +4,7 @@ import { X, Video, Send, Music, Sparkles } from "lucide-react";
 import { useAuthStore } from "../../store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
+import { useToast } from "../ui/Toast";
 
 interface CreateReelProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const soundInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const mutation = useMutation({
     mutationFn: (data: { caption: string; image?: File | null }) => api.posts.createReel(data),
@@ -29,7 +31,13 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
       handleRemoveFile();
       setCaption("");
       onClose();
+      toast("Reel shared successfully!", "success");
     },
+    onError: (err: any) => {
+      console.error("Error creating reel:", err);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err.message || "Failed to create reel";
+      toast(msg, "error");
+    }
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

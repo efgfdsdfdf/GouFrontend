@@ -134,6 +134,16 @@ const useWebSocket = () => {
             queryClient.invalidateQueries({ queryKey: ["notifications"] });
             if (String(msg.sender_id) !== String(user.id)) {
               toast("New message", "info");
+              // Native push notification for messages
+              if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                  new Notification("GoUnion", {
+                    body: "You have a new message",
+                    icon: '/icon-192x192.png',
+                    tag: `gounion-msg-${Date.now()}`,
+                  });
+                } catch {}
+              }
             }
           }
 
@@ -173,6 +183,15 @@ const useNotificationPopups = () => {
   const location = useLocation();
   const seenIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
+  const permissionAsked = useRef(false);
+
+  // Request notification permission once authenticated
+  useEffect(() => {
+    if (isAuthenticated && !permissionAsked.current && 'Notification' in window && Notification.permission === 'default') {
+      permissionAsked.current = true;
+      Notification.requestPermission();
+    }
+  }, [isAuthenticated]);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
@@ -181,6 +200,26 @@ const useNotificationPopups = () => {
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
   });
+
+  const sendNativeNotification = (title: string, body: string) => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const n = new Notification(title, {
+          body,
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png',
+          tag: `gounion-${Date.now()}`,
+          vibrate: [200, 100, 200],
+        });
+        n.onclick = () => {
+          window.focus();
+          n.close();
+        };
+      } catch {
+        // Silent fail on environments that don't support Notification constructor
+      }
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -228,9 +267,12 @@ const useNotificationPopups = () => {
           default: msg = "interacted with you."; break;
         }
       }
-      toast(`${notification.actor?.username || "Someone"} ${msg}`, "info");
+      const actor = notification.actor?.username || notification.actor?.fullName || "Someone";
+      toast(`${actor} ${msg}`, "info");
+      sendNativeNotification("GoUnion", `${actor} ${msg}`);
     } else {
       toast(`You have ${newNotifications.length} new notifications.`, "info");
+      sendNativeNotification("GoUnion", `You have ${newNotifications.length} new notifications.`);
     }
   }, [isAuthenticated, notifications, toast, location.pathname]);
 };

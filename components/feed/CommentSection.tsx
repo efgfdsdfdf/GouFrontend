@@ -343,3 +343,4 @@ const CommentItem = ({ comment, user, startReply, likeCommentMutation }: any) =>
       )}
     </div>
   );
+};

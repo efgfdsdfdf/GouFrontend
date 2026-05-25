@@ -44,66 +44,6 @@ export const Notifications = () => {
   });
 
   useEffect(() => {
-    // Attempt to mark all as read when opening this page
-    markReadMutation.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  return (
-    <div className="max-w-3xl mx-auto w-full pb-24 pt-8">
-      <div className="mb-8 relative p-8 rounded-[2rem] glass-panel overflow-hidden border border-white/5 shadow-2xl flex items-center gap-4">
-        <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
-          <Bell size={28} className="text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tighter">Notifications</h1>
-          <p className="text-zinc-400 font-medium mt-1">Activity across your network.</p>
-        </div>
-      </div>
-
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-
-const getIconForType = (type: string) => {
-  switch (type) {
-    case 'like': return <Heart size={16} className="text-red-400" />;
-    case 'comment': return <MessageSquare size={16} className="text-blue-400" />;
-    case 'follow': return <UserPlus size={16} className="text-emerald-400" />;
-    case 'group_invite':
-    case 'group_request': return <Users size={16} className="text-purple-400" />;
-    default: return <Bell size={16} className="text-white/50" />;
-  }
-};
-
-const getMessageForType = (type: string) => {
-  switch (type) {
-    case 'like': return "liked your post.";
-    case 'comment': return "commented on your post.";
-    case 'follow': return "started following you.";
-    case 'group_invite': return "invited you to a group.";
-    case 'group_request': return "requested to join your group.";
-    default: return "interacted with you.";
-  }
-};
-
-export const Notifications = () => {
-  const queryClient = useQueryClient();
-
-  const { data: notifications, isLoading } = useQuery({
-    queryKey: ['notifications'],
-    queryFn: api.notifications.getAll,
-  });
-
-  const markReadMutation = useMutation({
-    mutationFn: api.notifications.markRead,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    }
-  });
-
-  useEffect(() => {
-    // Attempt to mark all as read when opening this page
     markReadMutation.mutate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

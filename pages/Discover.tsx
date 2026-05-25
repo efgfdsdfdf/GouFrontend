@@ -157,6 +157,7 @@ export const Discover = () => {
             <section
               key={reel.id}
               className="snap-start snap-always h-full w-full relative bg-black flex items-center justify-center overflow-hidden"
+              style={{ contentVisibility: 'auto', containIntrinsicSize: '100vh' }}
             >
               {/* Background Blur for non-16:9 videos */}
               <div 
@@ -210,85 +211,58 @@ export const Discover = () => {
                 </button>
               </div>
 
-              {/* Interaction Sidebar (Right) */}
-              <div className="absolute right-4 bottom-28 z-20 hidden md:flex flex-col items-center gap-6">
+              {/* TikTok-style Right Sidebar - All screen sizes */}
+              <div className="absolute right-3 md:right-4 bottom-24 md:bottom-28 z-20 flex flex-col items-center gap-5 md:gap-6">
+                {/* Profile Avatar */}
                 <div className="flex flex-col items-center gap-1">
                   <Link 
                     to={`/profile/${reel.author.username}`}
-                    className="w-14 h-14 rounded-full border-2 border-white overflow-hidden shadow-lg transition-transform hover:scale-105 active:scale-95 mb-2"
+                    className="w-11 h-11 md:w-14 md:h-14 rounded-full border-2 border-white overflow-hidden shadow-lg transition-transform hover:scale-105 active:scale-95 mb-1"
                   >
                     <img 
-                      src={reel.author.avatarUrl} 
+                      src={reel.author.avatarUrl || `https://ui-avatars.com/api/?name=${reel.author.fullName}`} 
                       alt={reel.author.username}
                       className="w-full h-full object-cover"
                     />
                   </Link>
-                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center -mt-5 z-30 border-2 border-black">
+                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center -mt-4 z-30 border-2 border-black">
                     <Plus size={12} className="text-black" />
                   </div>
                 </div>
 
+                {/* Like */}
                 <button
                   onClick={() => likeMutation.mutate(reel.id)}
                   className="flex flex-col items-center gap-1 group"
                 >
-                  <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
+                  <div className="w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
                     <Heart
-                      className={`w-7 h-7 transition-colors ${reel.isLiked ? "fill-red-500 text-red-500" : "text-white"}`}
+                      className={`w-6 h-6 md:w-7 md:h-7 transition-colors ${reel.isLiked ? "fill-red-500 text-red-500" : "text-white"}`}
                     />
                   </div>
-                  <span className="text-[11px] font-black text-white drop-shadow-md">{reel.likes}</span>
+                  <span className="text-[10px] md:text-[11px] font-black text-white drop-shadow-md">{reel.likes}</span>
                 </button>
                 
+                {/* Comment */}
                 <button 
                   onClick={() => setActiveCommentPost(reel)}
                   className="flex flex-col items-center gap-1 group"
                 >
-                  <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
-                    <MessageCircle className="w-7 h-7 text-white" />
+                  <div className="w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
+                    <MessageCircle className="w-6 h-6 md:w-7 md:h-7 text-white" />
                   </div>
-                  <span className="text-[11px] font-black text-white drop-shadow-md">{reel.comments}</span>
+                  <span className="text-[10px] md:text-[11px] font-black text-white drop-shadow-md">{reel.comments}</span>
                 </button>
 
+                {/* Share */}
                 <button 
                   onClick={() => handleShare(reel)}
                   className="flex flex-col items-center gap-1 group"
                 >
-                  <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
-                    <Share2 className="w-7 h-7 text-white" />
+                  <div className="w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 flex items-center justify-center group-hover:bg-black/60 transition-all active:scale-90">
+                    <Share2 className="w-6 h-6 md:w-7 md:h-7 text-white" />
                   </div>
-                  <span className="text-[11px] font-black text-white drop-shadow-md">Share</span>
-                </button>
-              </div>
-
-              <div className="fixed inset-x-0 bottom-[80px] z-[50] flex items-center justify-around gap-3 bg-black/60 backdrop-blur-md border-t border-white/10 py-3 px-4 md:hidden pb-safe">
-                <button
-                  onClick={() => likeMutation.mutate(reel.id)}
-                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
-                  aria-label="Like reel"
-                >
-                  <Heart className={`w-6 h-6 ${reel.isLiked ? 'text-pink-500 fill-pink-500' : 'text-white'}`} />
-                </button>
-                <button
-                  onClick={() => setActiveCommentPost(reel)}
-                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
-                  aria-label="Comment on reel"
-                >
-                  <MessageCircle className="w-6 h-6 text-white" />
-                </button>
-                <button
-                  onClick={() => handleShare(reel)}
-                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
-                  aria-label="Share reel"
-                >
-                  <Share2 className="w-6 h-6 text-white" />
-                </button>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-primary text-black transition hover:brightness-95"
-                  aria-label="Create reel"
-                >
-                  <Camera className="w-6 h-6" />
+                  <span className="text-[10px] md:text-[11px] font-black text-white drop-shadow-md">Share</span>
                 </button>
               </div>
 
