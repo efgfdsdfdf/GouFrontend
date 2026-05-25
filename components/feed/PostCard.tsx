@@ -222,8 +222,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
                     )}
                     {(isOwner || isModerator) && (
                       <button
-                        onClick={() => {
-                          if (confirm("Delete?")) deleteMutation.mutate();
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          deleteMutation.mutate();
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
                       >
@@ -246,8 +249,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
       {/* Media */}
       {post.imageUrl && (
-        <div className="relative w-full bg-black/20 border-y border-white/5">
-          <MediaPlayer url={post.imageUrl} alt="Post media" />
+        <div className="relative w-full bg-black/20 border-y border-white/5 min-h-[300px] flex items-center justify-center">
+          {!isLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
+                G
+              </div>
+            </div>
+          )}
+          <div className={`relative z-10 w-full h-full ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
+            <MediaPlayer url={post.imageUrl} alt="Post media" onLoadedData={() => setIsLoaded(true)} onLoad={() => setIsLoaded(true)} />
+          </div>
         </div>
       )}
 

@@ -23,9 +23,10 @@ function formatTime(s: number): string {
 interface ImageViewerProps {
   src: string;
   alt?: string;
+  onLoad?: () => void;
 }
 
-export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt = "Post image" }) => {
+export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt = "Post image", onLoad }) => {
   const [lightbox, setLightbox] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
@@ -47,7 +48,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt = "Post image
         <img
           src={src}
           alt={alt}
-          onLoad={() => setLoaded(true)}
+          onLoad={() => {
+            setLoaded(true);
+            onLoad?.();
+          }}
           className={`w-full object-cover max-h-[540px] transition-all duration-700 ${
             loaded ? "opacity-100 scale-100" : "opacity-0 scale-105 absolute inset-0"
           } group-hover/img:scale-[1.02]`}
@@ -125,9 +129,10 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ src, alt = "Post image
 // ─── Video Player ──────────────────────────────────────────
 interface VideoPlayerProps {
   src: string;
+  onLoadedData?: () => void;
 }
 
-export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
+export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, onLoadedData }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -234,12 +239,13 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
           setCurrentTime(v.currentTime);
           if (v.buffered.length) setBuffered(v.buffered.end(v.buffered.length - 1));
         }}
+        onLoadedData={onLoadedData}
         onLoadedMetadata={() => {
           setDuration(videoRef.current?.duration ?? 0);
           setBuffering(false);
         }}
         onWaiting={() => setBuffering(true)}
-        onCanPlay={() => setBuffering(false)}
+        onCanPlay={() => { setBuffering(false); onLoadedData?.(); }}
         onEnded={() => { setPlaying(false); setShowControls(true); }}
       />
 
@@ -428,7 +434,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ src }) => {
 interface MediaPlayerProps {
   url: string;
   alt?: string;
+  onLoad?: () => void;
+  onLoadedData?: () => void;
 }
 
-export const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, alt }) =>
-  isVideoUrl(url) ? <VideoPlayer src={url} /> : <ImageViewer src={url} alt={alt} />;
+export const MediaPlayer: React.FC<MediaPlayerProps> = ({ url, alt, onLoad, onLoadedData }) =>
+  isVideoUrl(url) ? <VideoPlayer src={url} onLoadedData={onLoadedData} /> : <ImageViewer src={url} alt={alt} onLoad={onLoad} />;

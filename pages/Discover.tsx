@@ -32,6 +32,7 @@ export const Discover = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
+  const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
   const [discoverSeed, setDiscoverSeed] = useState(() => Math.random());
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
@@ -163,12 +164,21 @@ export const Discover = () => {
                 style={{ backgroundImage: `url(${reel.imageUrl})` }}
               />
 
+              {!loadedMedia[reel.id] && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
+                    G
+                  </div>
+                </div>
+              )}
+
               <video
                 ref={(el) => {
                   videoRefs.current[reel.id] = el;
                 }}
                 src={reel.imageUrl}
-                className={`relative z-10 h-full w-full max-h-full max-w-full object-contain bg-black shadow-2xl transition-transform duration-300 ${
+                onCanPlay={() => setLoadedMedia((prev) => ({ ...prev, [reel.id]: true }))}
+                className={`relative z-10 h-full w-full max-h-full max-w-full object-contain bg-transparent shadow-2xl transition-transform duration-300 ${
                   activeCommentPost?.id === reel.id
                     ? "scale-[0.52] -translate-y-[23vh] md:scale-[0.68] md:-translate-y-[17vh]"
                     : ""
@@ -251,13 +261,13 @@ export const Discover = () => {
                 </button>
               </div>
 
-              <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around gap-3 bg-black/80 border-t border-white/10 py-3 px-4 md:hidden">
+              <div className="fixed inset-x-0 bottom-[80px] z-[50] flex items-center justify-around gap-3 bg-black/60 backdrop-blur-md border-t border-white/10 py-3 px-4 md:hidden pb-safe">
                 <button
                   onClick={() => likeMutation.mutate(reel.id)}
                   className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
                   aria-label="Like reel"
                 >
-                  <Heart className={`w-6 h-6 ${reel.isLiked ? 'text-pink-500' : 'text-white'}`} />
+                  <Heart className={`w-6 h-6 ${reel.isLiked ? 'text-pink-500 fill-pink-500' : 'text-white'}`} />
                 </button>
                 <button
                   onClick={() => setActiveCommentPost(reel)}

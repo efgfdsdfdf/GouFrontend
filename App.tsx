@@ -26,6 +26,7 @@ import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
 import { DownloadPage } from "./pages/Download";
 import { ConfirmEmail } from "./pages/ConfirmEmail";
+import { ConfirmIdentity } from "./pages/ConfirmIdentity";
 import { useAuthStore } from "./store";
 import { usePwaStore } from "./store/pwaStore";
 import { PwaUpdater } from "./components/pwa/PwaUpdater";
@@ -216,7 +217,18 @@ const useNotificationPopups = () => {
 
     if (newNotifications.length === 1) {
       const notification = newNotifications[0];
-      toast(`${notification.actor?.username || "Someone"} ${notification.message}`, "info");
+      let msg = notification.message;
+      if (!msg) {
+        switch (notification.type) {
+          case 'like': msg = "liked your post."; break;
+          case 'comment': msg = "commented on your post."; break;
+          case 'follow': msg = "started following you."; break;
+          case 'group_invite': msg = "invited you to a group."; break;
+          case 'group_request': msg = "requested to join your group."; break;
+          default: msg = "interacted with you."; break;
+        }
+      }
+      toast(`${notification.actor?.username || "Someone"} ${msg}`, "info");
     } else {
       toast(`You have ${newNotifications.length} new notifications.`, "info");
     }
@@ -281,6 +293,7 @@ const AppRoutes = () => {
     "/reset-password",
     "/download",
     "/confirm-email",
+    "/confirm-identity",
   ];
 
   if (showStartupSplash) {
@@ -315,6 +328,7 @@ const AppRoutes = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/confirm-email" element={<ConfirmEmail />} />
+        <Route path="/confirm-identity" element={<ConfirmIdentity />} />
         <Route
           path="/"
           element={

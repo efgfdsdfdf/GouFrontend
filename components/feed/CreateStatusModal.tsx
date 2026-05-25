@@ -65,7 +65,7 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-lg bg-[#141417] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[90vh]"
+            className="relative w-full max-w-lg bg-[#141417] border border-white/10 rounded-[2.5rem] shadow-2xl overflow-y-auto custom-scrollbar max-h-[90vh]"
           >
             <div className="p-8 pb-4 flex items-center justify-between">
               <h3 className="text-xl font-black text-white tracking-tighter">

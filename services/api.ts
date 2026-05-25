@@ -631,8 +631,8 @@ export const api = {
       return res.data.map((c: any) => ({
         id: c.id.toString(),
         partner: transformUser(
-          c.participants.find((p: any) => String(p.id) !== String(currentUserId)) ||
-            c.participants[0],
+          c.participants?.find((p: any) => String(p.id) !== String(currentUserId)) ||
+            c.participants?.[0] || { id: 0, username: 'Unknown', full_name: 'Unknown User' }
         ),
         lastMessage: c.messages?.[c.messages.length - 1]?.content || 'No messages yet',
         timestamp: c.messages?.[c.messages.length - 1]

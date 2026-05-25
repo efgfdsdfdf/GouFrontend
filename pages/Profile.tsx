@@ -193,12 +193,13 @@ export const Profile = () => {
             </button>
           ) : (
             <>
-              <Link 
-                to={`/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`}
-                className="p-2.5 bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors"
+              <button 
+                onClick={() => chatMutation.mutate(user.id)}
+                disabled={chatMutation.isPending}
+                className="p-2.5 bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors disabled:opacity-50"
               >
                 <MessageSquare size={20} />
-              </Link>
+              </button>
               <button
                 onClick={() => followMutation.mutate()}
                 className={`px-6 py-2 rounded-xl text-sm font-medium transition-colors ${
