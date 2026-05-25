@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
@@ -18,10 +18,12 @@ import { usePwaStore } from "../store/pwaStore";
 import { api } from "../services/api";
 
 export const Login = () => {
+  const navigate = useNavigate();
   const { login } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,9 +36,14 @@ export const Login = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await (isSignup
-        ? api.auth.signup({ username, email, password, fullName })
-        : api.auth.login({ email, password }));
+      if (isSignup) {
+        await api.auth.signup({ username, email, password, fullName });
+        setConfirmationEmail(email);
+        navigate(`/confirm-email?email=${encodeURIComponent(email)}`);
+        return;
+      }
+
+      const response = await api.auth.login({ email, password });
       login(response.user, response.access_token);
     } catch (error: any) {
       console.error(error);

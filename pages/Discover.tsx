@@ -102,16 +102,20 @@ export const Discover = () => {
   }, [data]);
 
   const handleShare = async (reel: Post) => {
+    const text = reel.content
+      ? `${reel.content}\n\nWatch this reel on GoUnion from @${reel.author.username}`
+      : `Check out this reel from @${reel.author.username} on GoUnion.`;
+    const url = reel.imageUrl || window.location.origin;
     try {
       if (navigator.share) {
         await navigator.share({
           title: "GoUnion Reel",
-          text: reel.content || `Check out this reel from @${reel.author.username}`,
-          url: reel.imageUrl
+          text,
+          url,
         });
       } else {
-        await navigator.clipboard.writeText(reel.imageUrl);
-        alert("Video link copied to clipboard!");
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        alert("Reel content copied to clipboard!");
       }
     } catch (err) {
       console.error("Error sharing:", err);
@@ -197,7 +201,7 @@ export const Discover = () => {
               </div>
 
               {/* Interaction Sidebar (Right) */}
-              <div className="absolute right-4 bottom-28 z-20 flex flex-col items-center gap-6">
+              <div className="absolute right-4 bottom-28 z-20 hidden md:flex flex-col items-center gap-6">
                 <div className="flex flex-col items-center gap-1">
                   <Link 
                     to={`/profile/${reel.author.username}`}
@@ -244,6 +248,37 @@ export const Discover = () => {
                     <Share2 className="w-7 h-7 text-white" />
                   </div>
                   <span className="text-[11px] font-black text-white drop-shadow-md">Share</span>
+                </button>
+              </div>
+
+              <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around gap-3 bg-black/80 border-t border-white/10 py-3 px-4 md:hidden">
+                <button
+                  onClick={() => likeMutation.mutate(reel.id)}
+                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
+                  aria-label="Like reel"
+                >
+                  <Heart className={`w-6 h-6 ${reel.isLiked ? 'text-pink-500' : 'text-white'}`} />
+                </button>
+                <button
+                  onClick={() => setActiveCommentPost(reel)}
+                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
+                  aria-label="Comment on reel"
+                >
+                  <MessageCircle className="w-6 h-6 text-white" />
+                </button>
+                <button
+                  onClick={() => handleShare(reel)}
+                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/10 text-white transition hover:bg-white/15"
+                  aria-label="Share reel"
+                >
+                  <Share2 className="w-6 h-6 text-white" />
+                </button>
+                <button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-primary text-black transition hover:brightness-95"
+                  aria-label="Create reel"
+                >
+                  <Camera className="w-6 h-6" />
                 </button>
               </div>
 

@@ -72,7 +72,9 @@ export const Profile = () => {
   const chatMutation = useMutation({
     mutationFn: (userId: string) => api.chats.createConversation([userId]),
     onSuccess: () => {
-      navigate('/messages');
+      navigate(
+        `/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`,
+      );
     },
   });
 

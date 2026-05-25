@@ -118,8 +118,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
     currentUser?.role === "admin" || currentUser?.role === "moderator";
   const isOwner = currentUser?.id === post.author.id;
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/profile/${post.author.username}`;
-    const text = post.content || `Post from @${post.author.username}`;
+    const shareUrl = post.imageUrl || `${window.location.origin}/profile/${post.author.username}`;
+    const text = post.content
+      ? `${post.content}\n\nShared from GoUnion by @${post.author.username}`
+      : `Check out this post from @${post.author.username} on GoUnion.`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -129,7 +131,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
         });
       } else {
         await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
-        toast("Post link copied", "success");
+        toast("Post content copied", "success");
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

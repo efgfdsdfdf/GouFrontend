@@ -25,6 +25,7 @@ import { AdminPanel } from "./pages/AdminPanel";
 import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
 import { DownloadPage } from "./pages/Download";
+import { ConfirmEmail } from "./pages/ConfirmEmail";
 import { useAuthStore } from "./store";
 import { usePwaStore } from "./store/pwaStore";
 import { PwaUpdater } from "./components/pwa/PwaUpdater";
@@ -185,6 +186,7 @@ const useNotificationPopups = () => {
     }
 
     const unread = notifications.filter((n: any) => !n.read);
+    const newNotifications = unread.filter((n: any) => !seenIds.current.has(n.id));
 
     if (!initialized.current) {
       unread.forEach((n: any) => seenIds.current.add(n.id));
@@ -192,16 +194,23 @@ const useNotificationPopups = () => {
       return;
     }
 
-    unread.forEach((n: any) => {
-      if (seenIds.current.has(n.id)) return;
+    if (newNotifications.length === 0) return;
+
+    newNotifications.forEach((n: any) => {
       seenIds.current.add(n.id);
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
       if (n.postId) {
         queryClient.invalidateQueries({ queryKey: ["comments", String(n.postId)] });
       }
-      toast(`${n.actor?.username || "Someone"} ${n.message}`, "info");
     });
+
+    if (newNotifications.length === 1) {
+      const notification = newNotifications[0];
+      toast(`${notification.actor?.username || "Someone"} ${notification.message}`, "info");
+    } else {
+      toast(`You have ${newNotifications.length} new notifications.`, "info");
+    }
   }, [isAuthenticated, notifications, toast]);
 };
 
@@ -262,6 +271,7 @@ const AppRoutes = () => {
     "/forgot-password",
     "/reset-password",
     "/download",
+    "/confirm-email",
   ];
 
   if (showStartupSplash) {
@@ -273,7 +283,6 @@ const AppRoutes = () => {
     : location.pathname;
 
   if (!isAuthenticated && !PUBLIC_ROUTES.includes(currentPath)) {
-    // Check if it's a password reset link hitting the root or an unknown URL
     const hasResetToken = window.location.hash.includes("type=recovery") || 
                           window.location.hash.includes("access_token=") || 
                           window.location.search.includes("token=");
@@ -281,7 +290,7 @@ const AppRoutes = () => {
     if (hasResetToken) {
       return <Navigate to={`/reset-password${window.location.search}${window.location.hash}`} replace />;
     }
-    return <Navigate to="/download" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -296,6 +305,7 @@ const AppRoutes = () => {
         <Route path="/download" element={<DownloadPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/confirm-email" element={<ConfirmEmail />} />
         <Route
           path="/"
           element={

@@ -15,7 +15,11 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
   const [caption, setCaption] = useState("");
   const [video, setVideo] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [sound, setSound] = useState<File | null>(null);
+  const [soundName, setSoundName] = useState<string>("");
+  const [filter, setFilter] = useState<string>("none");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const soundInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -45,6 +49,18 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleSoundChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("audio/")) {
+        alert("Please choose an audio file.");
+        return;
+      }
+      setSound(file);
+      setSoundName(file.name);
+    }
+  };
+
   const handleRemoveFile = () => {
     if (preview) URL.revokeObjectURL(preview);
     setVideo(null);
@@ -54,7 +70,8 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
 
   const handleSubmit = () => {
     if (!video) return;
-    mutation.mutate({ caption, image: video });
+    const captionWithSound = soundName ? `${caption}\n🎵 Sound: ${soundName}` : caption;
+    mutation.mutate({ caption: captionWithSound, image: video });
   };
 
   return (
@@ -100,7 +117,15 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
                 <div className="relative aspect-[9/16] w-full max-w-[240px] mx-auto rounded-[2rem] overflow-hidden border border-white/10 bg-black shadow-2xl">
                   <video 
                     src={preview} 
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${
+                      filter === 'grayscale'
+                        ? 'filter grayscale'
+                        : filter === 'sepia'
+                        ? 'filter sepia'
+                        : filter === 'contrast'
+                        ? 'filter contrast-125'
+                        : ''
+                    }`}
                     autoPlay
                     loop
                     playsInline
@@ -132,14 +157,33 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
                     placeholder="Write a caption..."
                     className="w-full bg-transparent border-none focus:ring-0 text-white text-sm placeholder:text-white/20 resize-none h-20 font-medium"
                   />
-                  <div className="flex gap-2 mt-2">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-[10px] font-black text-white/60 hover:bg-white/10 transition-all uppercase tracking-widest">
-                      <Music size={12} /> Add Music
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => soundInputRef.current?.click()}
+                      className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-2xl text-[10px] font-black text-white/70 hover:bg-white/10 transition-all uppercase tracking-widest"
+                    >
+                      <Music size={14} />
+                      {soundName ? "Change sound" : "Add sound"}
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full text-[10px] font-black text-white/60 hover:bg-white/10 transition-all uppercase tracking-widest">
-                      <Sparkles size={12} /> Effects
-                    </button>
+                    <div className="flex items-center gap-2 overflow-x-auto py-1">
+                      {['none', 'grayscale', 'sepia', 'contrast'].map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setFilter(option)}
+                          className={`flex-1 min-w-[90px] rounded-2xl border px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all ${filter === option ? 'bg-primary text-black border-primary' : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'}`}
+                        >
+                          {option === 'none' ? 'Normal' : option.charAt(0).toUpperCase() + option.slice(1)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+                  {soundName && (
+                    <div className="mt-3 rounded-2xl bg-black/30 border border-white/10 p-3 text-xs text-white/70">
+                      Added track: <span className="font-semibold text-white">{soundName}</span>
+                    </div>
+                  )}
                 </div>
 
                 <input
@@ -148,6 +192,13 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
                   onChange={handleFileChange}
                   className="hidden"
                   accept="video/*"
+                />
+                <input
+                  type="file"
+                  ref={soundInputRef}
+                  onChange={handleSoundChange}
+                  className="hidden"
+                  accept="audio/*"
                 />
 
                 <button

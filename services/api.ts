@@ -241,12 +241,13 @@ export const api = {
       return { user: transformedUser, access_token: accessToken };
     },
     signup: async (data: any) => {
-      await apiClient.post('/users/', {
+      const res = await apiClient.post('/users/', {
         username: data.username,
         email: data.email,
         password: data.password,
+        full_name: data.fullName,
       });
-      return api.auth.login({ email: data.email, password: data.password });
+      return res.data;
     },
     me: async () => {
       const res = await apiClient.get('/users/me/');
@@ -599,6 +600,18 @@ export const api = {
         isJoined: false,
         privacy: g.privacy,
       }));
+    },
+    global: async (query: string) => {
+      const [users, posts, groups] = await Promise.all([
+        api.search.users(query),
+        api.search.posts(query),
+        api.search.groups(query),
+      ]);
+      return {
+        users,
+        posts,
+        groups,
+      };
     },
   },
   friends: {

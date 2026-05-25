@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  Camera,
   CheckCheck,
   Image as ImageIcon,
   MessageSquarePlus,
@@ -458,6 +459,13 @@ export const Messages = () => {
                           >
                             <ImageIcon size={20} />
                           </button>
+                          <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-11 w-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 flex items-center justify-center"
+                            aria-label="Attach using camera"
+                          >
+                            <Camera size={20} />
+                          </button>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -468,6 +476,7 @@ export const Messages = () => {
                     className="hidden"
                     onChange={handleFileSelect}
                     accept="image/*,video/*"
+                    capture="environment"
                   />
                   <input
                     type="text"

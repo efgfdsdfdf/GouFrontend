@@ -24,6 +24,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onMarkRead,
   onItemClick,
 }) => {
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   const getIcon = (type: string) => {
     switch (type) {
       case "like":
@@ -44,12 +46,14 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       className="fixed left-3 right-3 top-20 md:absolute md:left-auto md:right-0 md:top-full md:mt-4 md:w-96 md:max-w-[380px] bg-[#111113]/98 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden z-[180]"
     >
-      <div className="p-4 md:p-6 border-b border-white/5 flex items-center justify-between gap-3">
+      <div className="p-4 md:p-6 border-b border-white/5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-white font-black text-sm md:text-xs uppercase tracking-widest">
             Notifications
           </h3>
-          <p className="text-[11px] text-zinc-500 mt-1 md:hidden">Latest activity from GoUnion</p>
+          <p className="text-[11px] text-zinc-500 mt-1">
+            {unreadCount > 0 ? `You have ${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}` : 'No new notifications'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button

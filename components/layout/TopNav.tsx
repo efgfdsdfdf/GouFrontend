@@ -27,8 +27,8 @@ export const TopNav = () => {
 
   const { data: searchResults, isLoading: isSearching } = useQuery({
     queryKey: ["search", searchQuery],
-    queryFn: () => api.search.users(searchQuery),
-    enabled: searchQuery.length > 1,
+    queryFn: () => api.search.global(searchQuery),
+    enabled: searchQuery.length > 0,
   });
 
   const queryClient = useQueryClient();
@@ -91,7 +91,7 @@ export const TopNav = () => {
             />
 
             <AnimatePresence>
-              {showSearchResults && searchQuery.length > 1 && (
+              {showSearchResults && searchQuery.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -100,25 +100,67 @@ export const TopNav = () => {
                 >
                   {isSearching ? (
                     <div className="p-4 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">Searching...</div>
-                  ) : searchResults && searchResults.length > 0 ? (
-                    <div className="flex flex-col">
-                      {searchResults.map((user: any) => (
-                        <Link
-                          key={user.id}
-                          to={`/profile/${user.username}`}
-                          onClick={() => setShowSearchResults(false)}
-                          className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
-                        >
-                          <img src={user.avatarUrl} alt={user.username} className="w-10 h-10 rounded-full object-cover border border-white/10" />
-                          <div className="flex flex-col">
-                            <span className="text-white text-sm font-bold">{user.fullName}</span>
-                            <span className="text-zinc-500 text-xs font-medium">@{user.username}</span>
-                          </div>
-                        </Link>
-                      ))}
+                  ) : searchResults ? (
+                    <div className="space-y-2">
+                      {searchResults.users.length > 0 && (
+                        <div>
+                          <div className="px-4 py-3 text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500 border-b border-white/10">People</div>
+                          {searchResults.users.map((user: any) => (
+                            <Link
+                              key={`user-${user.id}`}
+                              to={`/profile/${user.username}`}
+                              onClick={() => setShowSearchResults(false)}
+                              className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                            >
+                              <img src={user.avatarUrl} alt={user.username} className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                              <div className="flex flex-col">
+                                <span className="text-white text-sm font-bold">{user.fullName}</span>
+                                <span className="text-zinc-500 text-xs font-medium">@{user.username}</span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      {searchResults.groups.length > 0 && (
+                        <div>
+                          <div className="px-4 py-3 text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500 border-b border-white/10">Groups</div>
+                          {searchResults.groups.map((group: any) => (
+                            <Link
+                              key={`group-${group.id}`}
+                              to={`/groups/${group.id}`}
+                              onClick={() => setShowSearchResults(false)}
+                              className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                            >
+                              <img src={group.imageUrl} alt={group.name} className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                              <div className="flex flex-col">
+                                <span className="text-white text-sm font-bold">{group.name}</span>
+                                <span className="text-zinc-500 text-xs font-medium">{group.description}</span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                      {searchResults.posts.length > 0 && (
+                        <div>
+                          <div className="px-4 py-3 text-[10px] uppercase tracking-[0.2em] font-black text-zinc-500 border-b border-white/10">Posts</div>
+                          {searchResults.posts.map((post: any) => (
+                            <button
+                              key={`post-${post.id}`}
+                              onClick={() => setShowSearchResults(false)}
+                              className="w-full text-left p-3 hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0"
+                            >
+                              <p className="text-white text-sm font-bold truncate">{post.content || 'Shared post'}</p>
+                              <span className="text-zinc-500 text-xs">@{post.author.username}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {searchResults.users.length === 0 && searchResults.groups.length === 0 && searchResults.posts.length === 0 && (
+                        <div className="p-4 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">No results found</div>
+                      )}
                     </div>
                   ) : (
-                    <div className="p-4 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">No results found</div>
+                    <div className="p-4 text-center text-zinc-500 text-xs font-bold uppercase tracking-widest">Start typing to search</div>
                   )}
                 </motion.div>
               )}
