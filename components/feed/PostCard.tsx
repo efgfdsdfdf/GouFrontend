@@ -30,6 +30,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showMenu, setShowMenu] = React.useState(false);
   const [isReporting, setIsReporting] = React.useState(false);
   const [reportReason, setReportReason] = React.useState("");
+  const [isLoaded, setIsLoaded] = React.useState(false);
 
   const updatePostAcrossLists = React.useCallback(
     (updater: (p: Post) => Post) => {

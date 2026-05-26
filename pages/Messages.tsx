@@ -44,6 +44,7 @@ export const Messages = () => {
     queryFn: api.chats.getAll,
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
+    staleTime: 30000,
   });
 
   const createChatMutation = useMutation({
@@ -131,6 +132,7 @@ export const Messages = () => {
     enabled: !!selectedChatId && !selectedChatId.startsWith("temp-"),
     refetchInterval: 2500,
     refetchOnWindowFocus: true,
+    staleTime: 30000,
   });
 
   useEffect(() => {

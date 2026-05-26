@@ -67,8 +67,8 @@ export const Notifications = () => {
           ))}
         </div>
       ) : (() => {
-        const unreadNotifs = notifications?.filter((n: any) => !n.read) || [];
-        if (unreadNotifs.length === 0) {
+        const hasNotifications = notifications && notifications.length > 0;
+        if (!hasNotifications) {
           return (
             <div className="glass-panel p-16 text-center rounded-[2rem] border border-dashed border-white/10">
               <Bell size={48} className="mx-auto text-white/10 mb-4" />
@@ -79,15 +79,17 @@ export const Notifications = () => {
         }
         return (
           <div className="space-y-4">
-            {unreadNotifs.map((notif: any, i: number) => (
+            {notifications.map((notif: any, i: number) => (
               <motion.div
                 key={notif.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="glass-panel p-4 rounded-2xl flex items-center gap-4 border border-primary/30 bg-primary/5 transition-colors"
+                className={`glass-panel p-4 rounded-2xl flex items-center gap-4 border transition-colors ${
+                  !notif.read ? 'border-primary/30 bg-primary/5' : 'border-white/5 opacity-75 hover:opacity-100'
+                }`}
               >
-                <Link to={`/profile/${notif.actor?.username}`} className="relative">
+                <Link to={`/profile/${notif.actor?.username}`} className="relative shrink-0">
                   <img
                     src={notif.actor?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${notif.actor?.username}`}
                     alt=""
@@ -97,8 +99,8 @@ export const Notifications = () => {
                     {getIconForType(notif.type)}
                   </div>
                 </Link>
-                <div className="flex-1">
-                  <p className="text-sm text-white/80">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white/80 leading-snug">
                     <Link to={`/profile/${notif.actor?.username}`} className="font-bold text-white hover:underline">
                       {notif.actor?.fullName || notif.actor?.username}
                     </Link>{" "}
@@ -108,6 +110,9 @@ export const Notifications = () => {
                     {notif.timestamp}
                   </p>
                 </div>
+                {!notif.read && (
+                  <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                )}
               </motion.div>
             ))}
           </div>

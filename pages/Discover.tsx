@@ -14,13 +14,15 @@ import {
   Camera, 
   Share2, 
   X,
-  Music2
+  Music2,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreateReel } from "../components/feed/CreateReel";
 import { CommentSection } from "../components/feed/CommentSection";
 import { api } from "../services/api";
 import { Post } from "../types";
+import { useAuthStore } from "../store";
 
 const isVideoUrl = (url?: string) => {
   if (!url) return false;
@@ -29,6 +31,7 @@ const isVideoUrl = (url?: string) => {
 
 export const Discover = () => {
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuthStore();
   const [isMuted, setIsMuted] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
@@ -44,12 +47,51 @@ export const Discover = () => {
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) =>
         lastPage.length > 0 ? allPages.length : undefined,
+      staleTime: 60000,
     });
 
   const likeMutation = useMutation({
     mutationFn: (postId: string) => api.posts.like(postId),
-    onSuccess: (data, postId) => {
-      // Optimistic update could be better, but invalidation works for now
+    onMutate: async (postId) => {
+      await queryClient.cancelQueries({ queryKey: ["discover-reels"] });
+      const previousReels = queryClient.getQueryData(["discover-reels"]);
+
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any[]) => page.map((p: Post) => {
+            if (p.id === postId) {
+              return {
+                ...p,
+                isLiked: !p.isLiked,
+                likes: p.isLiked ? p.likes - 1 : p.likes + 1
+              };
+            }
+            return p;
+          }))
+        };
+      });
+      return { previousReels };
+    },
+    onError: (err, variables, context) => {
+      queryClient.setQueryData(["discover-reels"], context?.previousReels);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (postId: string) => api.posts.delete(postId),
+    onSuccess: (_, postId) => {
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any[]) => page.filter((p: Post) => p.id !== postId))
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
     },
   });
@@ -129,7 +171,13 @@ export const Discover = () => {
 
   if (status === "pending") {
     return (
-      <div className="h-screen bg-black" />
+      <div className="fixed inset-0 md:pl-64 lg:pr-80 bg-black overflow-hidden z-0 pt-16 md:pt-20">
+        <div className="h-full flex items-center justify-center">
+          <div className="w-24 h-24 rounded-3xl bg-white/5 flex items-center justify-center font-serif font-black text-5xl text-white/20 animate-pulse shadow-[0_0_50px_rgba(255,255,255,0.05)] border border-white/10">
+            G
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -177,7 +225,7 @@ export const Discover = () => {
                   videoRefs.current[reel.id] = el;
                 }}
                 src={reel.imageUrl}
-                onCanPlay={() => setLoadedMedia((prev) => ({ ...prev, [reel.id]: true }))}
+                onPlaying={() => setLoadedMedia((prev) => ({ ...prev, [reel.id]: true }))}
                 className={`relative z-10 h-full w-full max-h-full max-w-full object-contain bg-transparent shadow-2xl transition-transform duration-300 ${
                   activeCommentPost?.id === reel.id
                     ? "scale-[0.52] -translate-y-[23vh] md:scale-[0.68] md:-translate-y-[17vh]"
@@ -263,6 +311,22 @@ export const Discover = () => {
                   </div>
                   <span className="text-[10px] md:text-[11px] font-black text-white drop-shadow-md">Share</span>
                 </button>
+
+                {/* Delete (if owner) */}
+                {currentUser?.id === reel.author.id && (
+                  <button 
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete this reel?")) {
+                        deleteMutation.mutate(reel.id);
+                      }
+                    }}
+                    className="flex flex-col items-center gap-1 group mt-2"
+                  >
+                    <div className="w-9 h-9 md:w-11 md:h-11 rounded-full bg-red-500/20 border border-red-500/30 flex items-center justify-center group-hover:bg-red-500/40 transition-all active:scale-90">
+                      <Trash2 className="w-4 h-4 md:w-5 md:h-5 text-red-400" />
+                    </div>
+                  </button>
+                )}
               </div>
 
               {/* Content Overlay (Bottom) */}

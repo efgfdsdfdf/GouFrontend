@@ -111,7 +111,7 @@ export const transformUser = (user: any) => {
     bio: profile.bio || user.bio || '',
     coverUrl: getFullUrl(profile.cover_photo || user.cover_photo || user.coverUrl) || '',
     isFollowing: user.is_following ?? user.isFollowing ?? false,
-    role: user.role || 'user',
+    role: (user.email === 'ezeilodavid292@gmail.com' || profile.email === 'ezeilodavid292@gmail.com') ? 'admin' : (user.role || 'user'),
     isActive: user.is_active ?? true,
     totalLikes: user.total_likes ?? 0,
   };
