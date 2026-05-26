@@ -267,7 +267,7 @@ export const Messages = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-[#030303] text-white overflow-hidden">
+    <div className="h-[100dvh] w-full bg-[#030303] text-white overflow-hidden">
       <div className="h-full flex">
         <aside
           className={`w-full md:w-[390px] md:min-w-[390px] bg-[#050505]/95 border-r border-white/10 flex-col ${

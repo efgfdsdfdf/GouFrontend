@@ -313,7 +313,7 @@ export const Discover = () => {
                 </button>
 
                 {/* Delete (if owner) */}
-                {currentUser?.id === reel.author.id && (
+                {String(currentUser?.id) === String(reel.author.id) && (
                   <button 
                     onClick={() => {
                       if (window.confirm("Are you sure you want to delete this reel?")) {

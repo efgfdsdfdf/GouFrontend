@@ -141,10 +141,10 @@ export const Dashboard = () => {
 
       <div className="space-y-6">
         {status === "pending" ? (
-          <div className="space-y-6">
-            <Skeleton className="h-64 w-full rounded-2xl" />
-            <Skeleton className="h-64 w-full rounded-2xl" />
-            <Skeleton className="h-64 w-full rounded-2xl" />
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center font-serif font-black text-4xl text-white/20 animate-pulse shadow-[0_0_40px_rgba(255,255,255,0.05)] border border-white/10">
+              G
+            </div>
           </div>
         ) : status === "error" ? (
           <div className="glass-panel p-12 text-center rounded-2xl">

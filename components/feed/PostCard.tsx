@@ -133,7 +133,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   const isModerator =
     currentUser?.role === "admin" || currentUser?.role === "moderator";
-  const isOwner = currentUser?.id === post.author.id;
+  const isOwner = String(currentUser?.id) === String(post.author.id);
   const handleShare = async () => {
     const shareUrl = post.imageUrl || `${window.location.origin}/profile/${post.author.username}`;
     const text = post.content
