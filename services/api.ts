@@ -99,7 +99,7 @@ export const transformUser = (user: any) => {
   const profile = user.profile || user;
   const username = user.username || profile.username || 'gounion-user';
   return {
-    id: user.id,
+    id: user.id || user.user_id || profile.id || profile.user_id || user.username || username,
     username,
     fullName: profile.full_name || user.full_name || user.name || username,
     avatarUrl:

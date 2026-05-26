@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { EditProfileModal } from "../components/profile/EditProfileModal";
 import { PostCard } from "../components/feed/PostCard";
 import { CreatePost } from "../components/feed/CreatePost";
+import { CreateReel } from "../components/feed/CreateReel";
 import { api } from "../services/api";
 
 export const Profile = () => {
@@ -26,6 +27,7 @@ export const Profile = () => {
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.username === username;
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
+  const [isCreateReelOpen, setIsCreateReelOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<"posts" | "reels" | "media" | "following" | "followers">("posts");
 
   const {
@@ -298,7 +300,17 @@ export const Profile = () => {
                         <h3 className="text-sm font-black uppercase tracking-widest text-white/80">Short Reels</h3>
                         <p className="text-xs text-white/35 mt-1">Videos posted only to Discover.</p>
                       </div>
-                      <span className="text-xs text-white/40">{reels?.length || 0} reels</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-xs text-white/40">{reels?.length || 0} reels</span>
+                        {isOwnProfile && (
+                          <button 
+                            onClick={() => setIsCreateReelOpen(true)}
+                            className="text-primary hover:text-white font-bold text-sm bg-primary/10 px-3 py-1.5 rounded-xl border border-primary/20"
+                          >
+                            + Add Reel
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {reels?.length ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
@@ -386,6 +398,11 @@ export const Profile = () => {
         onClose={() => setIsEditModalOpen(false)}
         initialData={user}
         onSave={(data) => updateProfileMutation.mutate(data)}
+      />
+
+      <CreateReel 
+        isOpen={isCreateReelOpen}
+        onClose={() => setIsCreateReelOpen(false)}
       />
     </div>
   );

@@ -37,10 +37,19 @@ export const Notifications = () => {
 
   const markReadMutation = useMutation({
     mutationFn: api.notifications.markRead,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    }
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previousNotifications = queryClient.getQueryData(["notifications"]);
+      queryClient.setQueryData(["notifications"], (old: any) => {
+        if (!old) return old;
+        return old.map((n: any) => ({ ...n, read: true }));
+      });
+      return { previousNotifications };
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+    },
   });
 
   useEffect(() => {

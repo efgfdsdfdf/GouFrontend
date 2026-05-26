@@ -18,7 +18,6 @@ import {
   Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreateReel } from "../components/feed/CreateReel";
 import { CommentSection } from "../components/feed/CommentSection";
 import { api } from "../services/api";
 import { Post } from "../types";
@@ -33,7 +32,6 @@ export const Discover = () => {
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const [isMuted, setIsMuted] = useState(false);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
   const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
   const [discoverSeed, setDiscoverSeed] = useState(() => Math.random());
@@ -193,12 +191,12 @@ export const Discover = () => {
             <p className="text-zinc-500 max-w-xs mb-10 text-sm leading-relaxed">
               Be the first to share a moment with the campus community!
             </p>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
+            <Link
+              to="/profile"
               className="px-10 py-4 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
             >
-              Create First Reel
-            </button>
+              Go to Profile to Create Reels
+            </Link>
           </div>
         ) : (
           reels.map((reel) => (
@@ -242,19 +240,12 @@ export const Discover = () => {
                 }}
               />
 
-              {/* Top Controls */}
               <div className="absolute top-20 right-6 z-20 flex flex-col gap-4">
                 <button
                   onClick={() => setIsMuted((prev) => !prev)}
                   className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-xl border border-white/10 text-white flex items-center justify-center hover:bg-black/60 transition-all active:scale-90"
                 >
                   {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                </button>
-                <button
-                  onClick={() => setIsCreateModalOpen(true)}
-                  className="w-12 h-12 rounded-full bg-primary text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl shadow-primary/20"
-                >
-                  <Plus size={24} />
                 </button>
               </div>
 
@@ -313,7 +304,7 @@ export const Discover = () => {
                 </button>
 
                 {/* Delete (if owner) */}
-                {String(currentUser?.id) === String(reel.author.id) && (
+                {(String(currentUser?.id) === String(reel.author.id) || currentUser?.username === reel.author.username) && (
                   <button 
                     onClick={() => {
                       if (window.confirm("Are you sure you want to delete this reel?")) {
@@ -363,14 +354,7 @@ export const Discover = () => {
       </div>
 
       {/* Modals & Overlays */}
-      <CreateReel 
-        isOpen={isCreateModalOpen} 
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          setDiscoverSeed(Math.random());
-          queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
-        }} 
-      />
+
 
       {/* Comment Drawer */}
       <AnimatePresence>
