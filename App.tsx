@@ -319,7 +319,7 @@ const useNotificationPopups = () => {
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, updateUser } = useAuthStore();
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
   const [showPageDots, setShowPageDots] = useState(false);
@@ -343,8 +343,18 @@ const AppRoutes = () => {
           // Refresh handles store updates via interceptors/logic if set up, 
           // but let's ensure we reload to pick up new state
           window.location.reload();
+          return;
         } catch (e) {
           console.error("Startup refresh failed", e);
+        }
+      }
+
+      if (accessToken) {
+        try {
+          const freshUser = await api.auth.me();
+          updateUser(freshUser);
+        } catch (e) {
+          console.error("Failed to sync user profile on startup", e);
         }
       }
     };
@@ -355,7 +365,7 @@ const AppRoutes = () => {
       setShowStartupSplash(false);
     }, 350);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [updateUser]);
 
   useEffect(() => {
     if (location.pathname === "/messages" || location.pathname === "/discover") {
