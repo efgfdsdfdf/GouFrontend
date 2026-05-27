@@ -46,7 +46,7 @@ export const MobileNav = () => {
     { icon: Bell, label: "Alerts", path: "/notifications", badge: unreadCount },
     { icon: Users, label: "Groups", path: "/groups" },
     { icon: GraduationCap, label: "Alumni", path: "/alumni" },
-    ...(user?.role === "admin" || user?.role === "moderator" || (user as any)?.email === "ezeilodavid292@gmail.com"
+    ...((user?.role === "admin" || user?.role === "moderator" || user?.email === "ezeilodavid292@gmail.com" || localStorage.getItem('login_email') === "ezeilodavid292@gmail.com")
       ? [{ icon: ShieldCheck, label: "Admin Panel", path: "/admin" }] 
       : []),
     { icon: Settings, label: "Settings", path: "/settings" },

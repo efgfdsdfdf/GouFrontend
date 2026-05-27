@@ -156,15 +156,16 @@ const transformProfile = (data: any, usernameFallback = '') => {
   return {
     id: userData.id || data.user_id || data.id,
     username,
-    fullName: profile.full_name || userData.full_name || username,
+    fullName: profile.full_name || userData.full_name || userData.name || username,
+    email: userData.email || profile.email || '',
     avatarUrl:
-      getFullUrl(profile.profile_picture) ||
+      getFullUrl(profile.profile_picture || profile.profile_picture_url || userData.profile_picture || userData.profile_picture_url || userData.avatar_url) ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-    university: profile.university || 'University Student',
-    followers: data.followers_count ?? userData.followers_count ?? 0,
-    following: data.following_count ?? userData.following_count ?? 0,
-    bio: profile.bio || '',
-    coverUrl: getFullUrl(profile.cover_photo) || '',
+    university: profile.university || userData.university || 'University Student',
+    followers: data.followers_count ?? userData.followers_count ?? data.followers ?? userData.followers ?? 0,
+    following: data.following_count ?? userData.following_count ?? data.following ?? userData.following ?? 0,
+    bio: profile.bio || userData.bio || '',
+    coverUrl: getFullUrl(profile.cover_photo || userData.cover_photo) || '',
     isFollowing: data.is_following ?? userData.is_following ?? false,
     role: userData.role || 'user',
     isActive: userData.is_active ?? true,

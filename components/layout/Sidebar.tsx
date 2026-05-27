@@ -133,7 +133,7 @@ export const Sidebar = () => {
           Profile
         </NavLink>
 
-        {(user?.role === "admin" || user?.role === "moderator" || (user as any)?.email === "ezeilodavid292@gmail.com") && (
+        {(user?.role === "admin" || user?.role === "moderator" || user?.email === "ezeilodavid292@gmail.com" || localStorage.getItem('login_email') === "ezeilodavid292@gmail.com") && (
           <NavLink
             to="/admin"
             className={({ isActive }) => `

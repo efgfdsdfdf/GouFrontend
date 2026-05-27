@@ -39,7 +39,7 @@ export const Messages = () => {
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 768px)").matches);
 
-  const { data: chats = [] } = useQuery({
+  const { data: chats = [], isLoading: chatsLoading } = useQuery({
     queryKey: ["chats"],
     queryFn: api.chats.getAll,
     refetchInterval: 5000,
@@ -307,7 +307,13 @@ export const Messages = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {filteredChats.length === 0 ? (
+            {chatsLoading ? (
+              <div className="flex-1 flex items-center justify-center py-20">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
+                  G
+                </div>
+              </div>
+            ) : filteredChats.length === 0 ? (
               <div className="px-8 py-20 text-center text-white/40 text-sm">
                 No chats yet. Open a profile and tap the message button to start one.
               </div>
@@ -393,8 +399,10 @@ export const Messages = () => {
                 <div className="relative space-y-2">
                   {(messagesLoading || isChatPreparing) ? (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
-                        G
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-white/30 animate-bounce [animation-delay:-0.2s]" />
+                        <span className="h-2 w-2 rounded-full bg-white/30 animate-bounce [animation-delay:-0.1s]" />
+                        <span className="h-2 w-2 rounded-full bg-white/30 animate-bounce" />
                       </div>
                     </div>
                   ) : (

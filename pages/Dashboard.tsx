@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, TouchEvent } from "react";
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { RefreshCw } from "lucide-react";
 import { PostCard } from "../components/feed/PostCard";
+import { CreatePost } from "../components/feed/CreatePost";
 import { StatusCircles } from "../components/feed/StatusCircles";
 import { Skeleton } from "../components/ui/Skeleton";
 import { api } from "../services/api";
@@ -152,6 +153,7 @@ export const Dashboard = () => {
           </div>
         ) : (
           <div className="space-y-6">
+            <CreatePost />
             {posts.map((post: Post) => (
               <PostCard key={post.id} post={post} />
             ))}
