@@ -1,0 +1,5 @@
+- [x] Gather chat UI structure (pages/Messages.tsx) and identify where to refactor into WhatsApp-like layout.
+- [ ] Build a new layout structure within pages/Messages.tsx (conversation list + right chat thread) using WhatsApp-style styling while preserving existing colors/theme.
+- [ ] Update message bubble markup/alignment to WhatsApp-like (sender/receiver, tail/spacing, timestamps).
+- [x] Remove the top bar and bottom bar in the chat page only (Messages.tsx).
+- [ ] Run TypeScript check / dev build to ensure no compile errors.
