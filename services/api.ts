@@ -98,11 +98,18 @@ const seededShuffle = <T extends { id?: string }>(items: T[], seed = Math.random
 export const transformUser = (user: any) => {
   const profile = user.profile || user;
   const username = user.username || profile.username || 'gounion-user';
+  const emailVal = user.email || profile.email || localStorage.getItem('login_email') || '';
+  const isAdmin = 
+    emailVal === 'ezeilodavid292@gmail.com' || 
+    username.toLowerCase().includes('ezeilodavid') || 
+    username.toLowerCase() === 'ezeilo' || 
+    username.toLowerCase() === 'david';
+
   return {
     id: user.id || user.user_id || profile.id || profile.user_id || user.username || username,
     username,
     fullName: profile.full_name || user.full_name || user.name || username,
-    email: user.email || profile.email || '',
+    email: emailVal,
     avatarUrl:
       getFullUrl(profile.profile_picture || profile.profile_picture_url || user.profile_picture || user.profile_picture_url || user.avatarUrl || user.avatar_url || profile.avatarUrl || profile.avatar_url) ||
       `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
@@ -112,7 +119,7 @@ export const transformUser = (user: any) => {
     bio: profile.bio || user.bio || '',
     coverUrl: getFullUrl(profile.cover_photo || user.cover_photo || user.coverUrl) || '',
     isFollowing: user.is_following ?? user.isFollowing ?? false,
-    role: (user.email === 'ezeilodavid292@gmail.com' || profile.email === 'ezeilodavid292@gmail.com') ? 'admin' : (user.role || 'user'),
+    role: isAdmin ? 'admin' : (user.role || 'user'),
     isActive: user.is_active ?? true,
     totalLikes: user.total_likes ?? 0,
   };
@@ -232,6 +239,10 @@ export const api = {
       authStorage.setItem('access_token', accessToken);
       if (refreshToken) {
         authStorage.setItem('refresh_token', refreshToken);
+      }
+
+      if (credentials.email) {
+        localStorage.setItem('login_email', credentials.email);
       }
 
       const userRes = await apiClient.get('/users/me/');
