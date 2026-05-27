@@ -56,7 +56,7 @@ export const Discover = () => {
       await queryClient.cancelQueries({ queryKey: ["discover-reels"] });
       const previousReels = queryClient.getQueryData(["discover-reels"]);
 
-      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+      queryClient.setQueryData(["discover-reels", discoverSeed], (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
@@ -64,8 +64,8 @@ export const Discover = () => {
             if (p.id === postId) {
               return {
                 ...p,
-                isLiked: !p.isLiked,
-                likes: p.isLiked ? p.likes - 1 : p.likes + 1
+                isLiked: true,
+                likes: p.isLiked ? p.likes : p.likes + 1
               };
             }
             return p;
@@ -85,7 +85,7 @@ export const Discover = () => {
   const deleteMutation = useMutation({
     mutationFn: (postId: string) => api.posts.delete(postId),
     onSuccess: (_, postId) => {
-      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+      queryClient.setQueryData(["discover-reels", discoverSeed], (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
@@ -148,7 +148,7 @@ export const Discover = () => {
     const text = reel.content
       ? `${reel.content}\n\nWatch this reel on GoUnion from @${reel.author.username}`
       : `Check out this reel from @${reel.author.username} on GoUnion.`;
-    const url = reel.imageUrl || window.location.origin;
+    const url = `${window.location.origin}/post/${reel.id}`;
     try {
       if (navigator.share) {
         await navigator.share({
@@ -306,7 +306,7 @@ export const Discover = () => {
                 </button>
 
                 {/* Delete (if owner) */}
-                {(String(currentUser?.id) === String(reel.author.id) || currentUser?.username === reel.author.username) && (
+                {(String(currentUser?.id) === String(reel.author?.id) || currentUser?.username === reel.author.username) && (
                   <button 
                     onClick={() => {
                       if (window.confirm("Are you sure you want to delete this reel?")) {
@@ -332,9 +332,36 @@ export const Discover = () => {
                     <span className="font-black text-white text-base tracking-tight hover:underline">
                       @{reel.author.username}
                     </span>
-                    <button className="px-2 py-0.5 rounded-md bg-primary text-[9px] font-black text-black uppercase tracking-widest border border-primary/20 shadow-lg shadow-primary/10">
-                      Follow
-                    </button>
+                    {!reel.author.isFollowing && String(currentUser?.id) !== String(reel.author.id) && (
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          api.profiles.follow(reel.author.id);
+                          queryClient.setQueryData(["discover-reels", discoverSeed], (old: any) => {
+                            if (!old?.pages) return old;
+                            return {
+                              ...old,
+                              pages: old.pages.map((page: any[]) => page.map((p: Post) => {
+                                if (p.author.id === reel.author.id) {
+                                  return {
+                                    ...p,
+                                    author: {
+                                      ...p.author,
+                                      isFollowing: true
+                                    }
+                                  };
+                                }
+                                return p;
+                              }))
+                            };
+                          });
+                        }}
+                        className="px-2 py-0.5 rounded-md bg-primary text-[9px] font-black text-black uppercase tracking-widest border border-primary/20 shadow-lg shadow-primary/10"
+                      >
+                        Follow
+                      </button>
+                    )}
                   </Link>
                   
                   <p className="text-white/90 text-[13px] leading-relaxed mb-4 font-medium line-clamp-2">

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Heart, Eye } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Heart, Eye, Share2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
 
@@ -93,6 +93,21 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     if (currentStory.id) {
       likeMutation.mutate(currentStory.id);
     }
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentStory?.id) return;
+    const url = `${window.location.origin}/post/${currentStory.id}`;
+    const text = currentStory.content || `Check out this story from @${currentStory.user?.username}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "GoUnion Story", text, url });
+      } else {
+        await navigator.clipboard.writeText(`${text}\n${url}`);
+        alert("Story link copied!");
+      }
+    } catch (err) {}
   };
 
   return (
@@ -216,20 +231,29 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 </div>
               </div>
 
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                onClick={handleLike}
-                className={`p-3 rounded-full border transition-all duration-300 ${
-                  currentStory.isLiked
-                    ? "bg-primary border-primary text-black shadow-[0_0_20px_rgba(196,255,14,0.4)]"
-                    : "bg-white/10 border-white/10 text-white hover:bg-white/20"
-                }`}
-              >
-                <Heart
-                  size={20}
-                  fill={currentStory.isLiked ? "currentColor" : "none"}
-                />
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleShare}
+                  className="p-3 rounded-full bg-white/10 border border-white/10 text-white hover:bg-white/20 transition-all duration-300"
+                >
+                  <Share2 size={20} />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLike}
+                  className={`p-3 rounded-full border transition-all duration-300 ${
+                    currentStory.isLiked
+                      ? "bg-primary border-primary text-black shadow-[0_0_20px_rgba(196,255,14,0.4)]"
+                      : "bg-white/10 border-white/10 text-white hover:bg-white/20"
+                  }`}
+                >
+                  <Heart
+                    size={20}
+                    fill={currentStory.isLiked ? "currentColor" : "none"}
+                  />
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         </div>

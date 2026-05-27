@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, Send } from "lucide-react";
 import { useAuthStore } from "../../store";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
 import { useToast } from "../ui/Toast";
 
@@ -22,11 +22,14 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
   const [image, setImage] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const createMutation = useMutation({
     mutationFn: api.stories.create,
     onSuccess: (status) => {
       onSuccess(status);
+      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
       setContent("");
       setImage(null);
       setPreview(null);

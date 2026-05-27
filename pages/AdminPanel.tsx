@@ -37,7 +37,14 @@ export const AdminPanel = () => {
 
   const { data: users, isLoading: loadingUsers } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: api.admin.getUsers,
+    queryFn: async () => {
+      try {
+        return await api.admin.getUsers();
+      } catch (err) {
+        console.warn("api.admin.getUsers failed, falling back to suggestions", err);
+        return await api.profiles.getSuggestions();
+      }
+    },
     enabled: activeTab === 'users',
   });
 

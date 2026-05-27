@@ -104,13 +104,27 @@ export const Profile = () => {
         };
       });
 
-      return { previousProfile };
+      await queryClient.cancelQueries({ queryKey: ["profile-followers", user.id] });
+      const previousFollowers = queryClient.getQueryData(["profile-followers", user.id]);
+      
+      queryClient.setQueryData(["profile-followers", user.id], (old: any) => {
+        if (!old) return old;
+        if (previousProfile?.isFollowing) {
+          return old.filter((u: any) => u.id !== currentUser?.id);
+        } else {
+          return [...old, currentUser];
+        }
+      });
+
+      return { previousProfile, previousFollowers };
     },
     onError: (err, newTodo, context) => {
       queryClient.setQueryData(["profile", username], context?.previousProfile);
+      queryClient.setQueryData(["profile-followers", user.id], context?.previousFollowers);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["profile", username] });
+      queryClient.invalidateQueries({ queryKey: ["profile-followers", user.id] });
     },
   });
 
@@ -199,13 +213,12 @@ export const Profile = () => {
             </button>
           ) : (
             <>
-              <button 
-                onClick={() => chatMutation.mutate(user.id)}
-                disabled={chatMutation.isPending}
-                className="p-2.5 bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors disabled:opacity-50"
+              <Link 
+                to={`/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`}
+                className="p-2.5 flex items-center justify-center bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors disabled:opacity-50"
               >
                 <MessageSquare size={20} />
-              </button>
+              </Link>
               <button
                 onClick={() => followMutation.mutate()}
                 className={`px-6 py-2 rounded-xl text-sm font-medium transition-colors ${

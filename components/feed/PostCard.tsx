@@ -136,7 +136,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
     currentUser?.role === "admin" || currentUser?.role === "moderator";
   const isOwner = String(currentUser?.id) === String(post.author.id) || currentUser?.username === post.author.username;
   const handleShare = async () => {
-    const shareUrl = post.imageUrl || `${window.location.origin}/profile/${post.author.username}`;
+    const shareUrl = `${window.location.origin}/post/${post.id}`;
     const text = post.content
       ? `${post.content}\n\nShared from GoUnion by @${post.author.username}`
       : `Check out this post from @${post.author.username} on GoUnion.`;

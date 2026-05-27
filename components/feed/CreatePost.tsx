@@ -33,9 +33,26 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+      if (file.type.startsWith("video/")) {
+        const url = URL.createObjectURL(file);
+        const videoElement = document.createElement("video");
+        videoElement.preload = "metadata";
+        videoElement.onloadedmetadata = () => {
+          window.URL.revokeObjectURL(url);
+          if (videoElement.duration > 1800) {
+            alert("Feed videos must be 30 minutes or less");
+            if (fileInputRef.current) fileInputRef.current.value = "";
+            return;
+          }
+          setSelectedFile(file);
+          setPreviewUrl(URL.createObjectURL(file));
+        };
+        videoElement.src = url;
+      } else {
+        setSelectedFile(file);
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      }
     }
   };
 
