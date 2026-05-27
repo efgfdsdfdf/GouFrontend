@@ -22,7 +22,7 @@ import { api } from "../services/api";
 
 export const Profile = () => {
   const { username } = useParams<{ username: string }>();
-  const { user: currentUser } = useAuthStore();
+  const { user: currentUser, updateUser } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.username === username;
@@ -70,8 +70,15 @@ export const Profile = () => {
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: any) => api.profiles.update(data),
-    onSuccess: () => {
+    onSuccess: (updatedUser) => {
+      if (isOwnProfile && updatedUser) {
+        updateUser(updatedUser);
+      }
+      setIsEditModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ["profile", username] });
+      queryClient.invalidateQueries({ queryKey: ["profile-posts", username] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
     },
   });
 
@@ -415,6 +422,7 @@ export const Profile = () => {
         onClose={() => setIsEditModalOpen(false)}
         initialData={user}
         onSave={(data) => updateProfileMutation.mutate(data)}
+        isSaving={updateProfileMutation.isPending}
       />
 
       <CreateReel 

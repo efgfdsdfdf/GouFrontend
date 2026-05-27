@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, Save, User, FileText, School, Plus } from "lucide-react";
-import { useAuthStore } from "../../store";
 
 interface EditProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
   initialData: any;
+  isSaving?: boolean;
 }
 
 export const EditProfileModal: React.FC<EditProfileModalProps> = ({
@@ -15,6 +15,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   onClose,
   onSave,
   initialData,
+  isSaving = false,
 }) => {
   const [formData, setFormData] = useState({
     fullName: initialData?.fullName || "",
@@ -26,6 +27,19 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     formData.avatarUrl,
   );
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const nextData = {
+      fullName: initialData?.fullName || "",
+      bio: initialData?.bio || "",
+      university: initialData?.university || "",
+      avatarUrl: initialData?.avatarUrl || "",
+    };
+    setFormData(nextData);
+    setAvatarPreview(nextData.avatarUrl);
+    setAvatarFile(null);
+  }, [initialData, isOpen]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -47,7 +61,6 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({ ...formData, avatar: avatarFile });
-    onClose();
   };
 
   return (
@@ -58,7 +71,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={() => {
+              if (!isSaving) onClose();
+            }}
             className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-sm"
           />
 
@@ -74,6 +89,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               </h3>
               <button
                 onClick={onClose}
+                disabled={isSaving}
                 className="p-2 hover:bg-white/5 rounded-full text-zinc-500 transition-colors"
               >
                 <X size={20} />
@@ -160,10 +176,11 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
 
               <button
                 type="submit"
-                className="w-full h-14 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-xl shadow-primary/20 mt-4"
+                disabled={isSaving}
+                className="w-full h-14 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:opacity-90 transition-all shadow-xl shadow-primary/20 mt-4 disabled:opacity-50"
               >
                 <Save size={18} />
-                <span>Save Changes</span>
+                <span>{isSaving ? "Saving..." : "Save Changes"}</span>
               </button>
             </form>
           </motion.div>

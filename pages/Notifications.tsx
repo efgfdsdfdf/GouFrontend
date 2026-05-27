@@ -9,6 +9,7 @@ import { StatusCircles } from '../components/feed/StatusCircles';
 const getIconForType = (type: string) => {
   switch (type) {
     case 'like': return <Heart size={16} className="text-red-400" />;
+    case 'like_comment': return <Heart size={16} className="text-pink-400" />;
     case 'comment': return <MessageSquare size={16} className="text-blue-400" />;
     case 'follow': return <UserPlus size={16} className="text-emerald-400" />;
     case 'group_invite':
@@ -20,6 +21,7 @@ const getIconForType = (type: string) => {
 const getMessageForType = (type: string) => {
   switch (type) {
     case 'like': return "liked your post.";
+    case 'like_comment': return "liked your comment.";
     case 'comment': return "commented on your post.";
     case 'follow': return "started following you.";
     case 'group_invite': return "invited you to a group.";
@@ -49,6 +51,24 @@ export const Notifications = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
+    },
+  });
+
+  const markOneReadMutation = useMutation({
+    mutationFn: (id: string) => api.notifications.markOneRead(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previousNotifications = queryClient.getQueryData(["notifications"]);
+      queryClient.setQueryData(["notifications"], (old: any) =>
+        old?.map((n: any) => String(n.id) === String(id) ? { ...n, read: true } : n),
+      );
+      return { previousNotifications };
+    },
+    onError: (_err, _id, context: any) => {
+      queryClient.setQueryData(["notifications"], context?.previousNotifications);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications-unread"] });
     },
   });
@@ -97,7 +117,9 @@ export const Notifications = () => {
         }
         return (
           <div className="space-y-4">
-            {notifications.map((notif: any, i: number) => (
+            {notifications.map((notif: any, i: number) => {
+              const targetPath = notif.postId ? `/post/${notif.postId}` : `/profile/${notif.actor?.username}`;
+              return (
               <motion.div
                 key={notif.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -117,22 +139,26 @@ export const Notifications = () => {
                     {getIconForType(notif.type)}
                   </div>
                 </Link>
-                <div className="flex-1 min-w-0">
+                <Link
+                  to={targetPath}
+                  onClick={() => markOneReadMutation.mutate(String(notif.id))}
+                  className="flex-1 min-w-0"
+                >
                   <p className="text-sm text-white/80 leading-snug">
-                    <Link to={`/profile/${notif.actor?.username}`} className="font-bold text-white hover:underline">
+                    <span className="font-bold text-white hover:underline">
                       {notif.actor?.fullName || notif.actor?.username}
-                    </Link>{" "}
+                    </span>{" "}
                     {notif.message || getMessageForType(notif.type)}
                   </p>
                   <p className="text-xs text-white/40 mt-1">
                     {notif.timestamp}
                   </p>
-                </div>
+                </Link>
                 {!notif.read && (
                   <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
                 )}
               </motion.div>
-            ))}
+            )})}
           </div>
         );
       })()}

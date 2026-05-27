@@ -472,13 +472,13 @@ export const api = {
         cover_photo = await uploadFile(data.coverImage);
       }
 
-      await apiClient.put('/users/me/profile', {
-        full_name: data.fullName,
-        bio: data.bio,
-        university: data.university,
-        profile_picture,
-        cover_photo,
-      });
+      const payload: Record<string, any> = {};
+      if (data.bio !== undefined) payload.bio = data.bio;
+      if (data.university !== undefined) payload.university = data.university;
+      if (profile_picture !== undefined) payload.profile_picture = profile_picture;
+      if (cover_photo !== undefined) payload.cover_photo = cover_photo;
+
+      await apiClient.put('/users/me/profile', payload);
 
       const userRes = await apiClient.get('/users/me/');
       return transformUser(userRes.data);
@@ -740,7 +740,20 @@ export const api = {
     markRead: async () => {
       if (notificationsEndpointUnavailable) return { status: 'unavailable' };
       try {
-        const res = await apiClient.post('/notifications/read');
+        const res = await apiClient.post('/notifications/read-all');
+        return res.data;
+      } catch (error) {
+        if (isNotFound(error)) {
+          notificationsEndpointUnavailable = true;
+          return { status: 'unavailable' };
+        }
+        throw error;
+      }
+    },
+    markOneRead: async (id: string) => {
+      if (notificationsEndpointUnavailable) return { status: 'unavailable' };
+      try {
+        const res = await apiClient.post(`/notifications/${id}/read`);
         return res.data;
       } catch (error) {
         if (isNotFound(error)) {

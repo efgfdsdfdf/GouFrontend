@@ -126,8 +126,15 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
     onError: (_err, _commentId, context: any) => {
       queryClient.setQueryData(["comments", postId], context?.previousComments);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", postId] });
+    onSuccess: (response, commentId) => {
+      if (typeof response?.likes_count !== "number") return;
+      queryClient.setQueryData(["comments", postId], (old: any[]) =>
+        old?.map((comment) =>
+          String(comment.id) === String(commentId)
+            ? { ...comment, likes_count: response.likes_count }
+            : comment,
+        ),
+      );
     },
   });
 
@@ -147,48 +154,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   };
 
   return (
-    <div className="mt-4 pt-4 border-t border-white/5 space-y-4">
-      {replyTarget && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs text-white">
-          <div className="flex min-w-0 items-center gap-2">
-            <CornerDownRight size={15} className="text-primary shrink-0" />
-            <span className="truncate">
-              Replying to @{replyTarget.user?.username}: {replyTarget.content}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setReplyTarget(null)}
-            className="h-7 w-7 rounded-lg bg-white/5 flex items-center justify-center text-white/60 hover:text-white"
-            aria-label="Cancel reply"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <textarea
-          rows={2}
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={replyTarget ? `Reply to @${replyTarget.user?.username}` : "Write a comment..."}
-          className="w-full resize-none bg-white/10 border border-white/10 rounded-2xl px-5 py-3 text-sm text-zinc-100 focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-500"
-        />
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="submit"
-            disabled={!content.trim() || createCommentMutation.isPending}
-            className="w-28 h-12 flex items-center justify-center bg-violet-600 text-white rounded-2xl hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
-          >
-            <Send size={20} />
-          </button>
-          <span className="text-xs text-white/40">
-            {comments?.length ?? 0} comment{comments?.length === 1 ? "" : "s"}
-          </span>
-        </div>
-      </form>
-
-      <div className="space-y-5 pb-4">
+    <div className="mt-4 flex h-full min-h-0 flex-col border-t border-white/5 pt-4">
+      <div className="flex-1 min-h-0 space-y-5 overflow-y-auto pb-4 pr-1">
         {isLoading ? (
           <div className="h-12" />
         ) : (
@@ -229,7 +196,45 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
           </p>
         )}
         {/* Padding to prevent cutting on mobile */}
-        <div className="h-24 md:h-12" />
+        <div className="h-4" />
+      </div>
+
+      <div className="sticky bottom-0 mt-3 space-y-2 border-t border-white/5 bg-[#111113] pt-3">
+        {replyTarget && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-white">
+            <div className="flex min-w-0 items-center gap-2">
+              <CornerDownRight size={14} className="text-primary shrink-0" />
+              <span className="truncate">
+                Replying to @{replyTarget.user?.username}: {replyTarget.content}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyTarget(null)}
+              className="h-7 w-7 rounded-lg bg-white/5 flex items-center justify-center text-white/60 hover:text-white"
+              aria-label="Cancel reply"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="flex items-end gap-2">
+          <textarea
+            rows={1}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={replyTarget ? `Reply to @${replyTarget.user?.username}` : "Write a comment..."}
+            className="min-h-11 max-h-28 flex-1 resize-none bg-white/10 border border-white/10 rounded-2xl px-4 py-3 text-sm text-zinc-100 focus:outline-none focus:border-violet-500/50 transition-all placeholder:text-zinc-500"
+          />
+          <button
+            type="submit"
+            disabled={!content.trim() || createCommentMutation.isPending}
+            className="h-11 w-11 shrink-0 flex items-center justify-center bg-violet-600 text-white rounded-2xl hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-violet-500/20"
+            aria-label="Send comment"
+          >
+            <Send size={17} />
+          </button>
+        </form>
       </div>
     </div>
   );
