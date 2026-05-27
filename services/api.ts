@@ -185,7 +185,7 @@ const uploadFile = async (file?: File | null) => {
   if (!file) return null;
   const formData = new FormData();
   formData.append('file', file);
-  const uploadRes = await apiClient.post('/upload/', formData);
+  const uploadRes = await apiClient.post('/media/upload', formData);
   return uploadRes.data.url;
 };
 
@@ -402,8 +402,13 @@ export const api = {
       return { success: true, likes_count: res.data.likes_count };
     },
     delete: async (id: string) => {
-      const res = await apiClient.delete(`/posts/${id}`);
-      return res.data;
+      try {
+        const res = await apiClient.delete(`/posts/${Number(id)}`);
+        return res.data;
+      } catch (error) {
+        if (isNotFound(error)) return { status: 'deleted' };
+        throw error;
+      }
     },
     getComments: async (id: string) => {
       const res = await apiClient.get(`/posts/${id}/comments`);
@@ -671,10 +676,7 @@ export const api = {
       let videoUrl = null;
 
       if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        const url = uploadRes.data.url;
+        const url = await uploadFile(file);
         if (file.type.startsWith('video/')) videoUrl = url;
         else imageUrl = url;
       }
@@ -828,6 +830,7 @@ export const api = {
         likesCount: s.likes?.length || 0,
         viewsCount: s.views?.length || 0,
         isLiked: s.likes?.some((l: any) => String(l.user_id) === String(authStorage.getItem('user_id'))),
+        isViewed: s.views?.some((v: any) => String(v.user_id) === String(authStorage.getItem('user_id'))),
       }));
     },
     create: async (data: any) => {

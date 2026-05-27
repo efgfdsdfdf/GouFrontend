@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search, MessageSquare, Check, MapPin, GraduationCap } from "lucide-react";
 import { api } from "../services/api";
 import { Skeleton } from "../components/ui/Skeleton";
@@ -9,6 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 export const Alumni = () => {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: users, isLoading } = useQuery({
     queryKey: ["users", query],
@@ -20,6 +21,19 @@ export const Alumni = () => {
     mutationFn: (userId: string) => api.chats.createConversation([userId]),
     onSuccess: () => {
       navigate('/messages');
+    },
+  });
+
+  const followMutation = useMutation({
+    mutationFn: (userId: string) => api.profiles.follow(userId),
+    onSuccess: (_data, userId) => {
+      queryClient.setQueryData(["users", query], (old: any[] = []) =>
+        old.map((person) =>
+          String(person.id) === String(userId)
+            ? { ...person, isFollowing: true, followers: (person.followers || 0) + 1 }
+            : person,
+        ),
+      );
     },
   });
 
@@ -102,12 +116,15 @@ export const Alumni = () => {
                   View Profile
                 </Link>
                 <button
-                  onClick={() => chatMutation.mutate(user.id)}
-                  disabled={chatMutation.isPending}
+                  onClick={() => {
+                    if (user.isFollowing) chatMutation.mutate(user.id);
+                    else followMutation.mutate(user.id);
+                  }}
+                  disabled={chatMutation.isPending || followMutation.isPending}
                   className="flex-1 py-3 bg-white text-black rounded-xl font-medium text-sm transition-all hover:bg-white/90 active:scale-95 flex items-center justify-center gap-2"
                 >
                   <MessageSquare size={16} />
-                  Chat
+                  {user.isFollowing ? "Chat" : "Follow first"}
                 </button>
               </div>
             </motion.div>

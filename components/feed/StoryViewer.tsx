@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Heart, Eye, Share2 } from "lucide-react";
+import { X, Heart, Eye, Share2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../services/api";
 
@@ -10,6 +10,9 @@ interface StoryViewerProps {
   stories: any[];
   currentUser: any;
 }
+
+const isVideoStory = (url?: string) =>
+  Boolean(url && /\.(mp4|webm|ogg|mov|m4v)(\?|#|$)/i.test(url));
 
 export const StoryViewer: React.FC<StoryViewerProps> = ({
   isOpen,
@@ -24,8 +27,24 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const viewMutation = useMutation({
     mutationFn: (id: string) => api.stories.view(id),
-    onSuccess: () => {
-      // Potentially refresh feed to update view count, but maybe too much
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["stories-feed"] });
+      const previousStories = queryClient.getQueryData(["stories-feed"]);
+      queryClient.setQueryData(["stories-feed"], (old: any[] = []) =>
+        old.map((story) =>
+          String(story.id) === String(id)
+            ? {
+                ...story,
+                isViewed: true,
+                viewsCount: Math.max(story.viewsCount || 0, (story.viewsCount || 0) + (story.isViewed ? 0 : 1)),
+              }
+            : story,
+        ),
+      );
+      return { previousStories };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(["stories-feed"], context?.previousStories);
     },
   });
 
@@ -109,6 +128,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
   };
   const currentStoryOverride = currentStory.id ? storyOverrides[currentStory.id] : null;
   const displayStory = currentStoryOverride ? { ...currentStory, ...currentStoryOverride } : currentStory;
+  const hasVideo = isVideoStory(displayStory.imageUrl);
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -201,7 +221,17 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
             {/* Content Container */}
             <div className="flex-1 relative flex items-center justify-center">
-              {displayStory.imageUrl ? (
+              {displayStory.imageUrl && hasVideo ? (
+                <video
+                  src={displayStory.imageUrl}
+                  className="w-full h-full object-cover"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                />
+              ) : displayStory.imageUrl ? (
                 <img
                   src={displayStory.imageUrl}
                   className="w-full h-full object-cover"

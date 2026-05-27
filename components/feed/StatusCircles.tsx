@@ -44,13 +44,18 @@ export const StatusCircles = () => {
     setIsViewerOpen(true);
   };
 
+  const getStoryRingClass = (stories: any[]) =>
+    stories.length > 0 && stories.every((story) => story.isViewed)
+      ? "bg-white/15 opacity-60 grayscale"
+      : "story-ring shadow-[0_0_20px_rgba(196,255,14,0.15)]";
+
   return (
     <div className="flex gap-4 overflow-x-auto hide-scrollbar -mx-4 px-4 mb-4">
       {/* Your Story */}
       <div className="flex flex-col items-center gap-2 group cursor-pointer shrink-0">
         <div
           onClick={() => myStories.length > 0 ? openViewer({ stories: myStories, user }) : setIsModalOpen(true)}
-          className={`relative w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${myStories.length > 0 ? 'story-ring' : 'bg-white/10'}`}
+          className={`relative w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${myStories.length > 0 ? getStoryRingClass(myStories) : 'bg-white/10'}`}
         >
           <div className="w-full h-full rounded-full border-2 border-[#030303] overflow-hidden flex items-center justify-center bg-white/5">
             {user?.avatarUrl ? (
@@ -91,12 +96,12 @@ export const StatusCircles = () => {
           onClick={() => openViewer(group)}
           className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
         >
-          <div className="w-16 h-16 rounded-full p-[2px] story-ring transition-transform duration-300 group-hover:scale-105 shadow-[0_0_20px_rgba(196,255,14,0.15)]">
+          <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${getStoryRingClass(group.stories)}`}>
             <div className="w-full h-full rounded-full border-2 border-[#030303] overflow-hidden">
               <img
                 src={group.user.avatarUrl || `https://ui-avatars.com/api/?name=${group.user.fullName}`}
                 alt={group.user.username}
-                className="w-full h-full object-cover"
+                className={`w-full h-full object-cover transition-opacity ${group.stories.every((story: any) => story.isViewed) ? "opacity-55" : "opacity-100"}`}
                 referrerPolicy="no-referrer"
               />
             </div>

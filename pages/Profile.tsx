@@ -1,5 +1,5 @@
 import React from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "../components/ui/Skeleton";
 import {
@@ -8,7 +8,6 @@ import {
   Users,
   MessageSquare,
   Edit3,
-  Share2,
   Check,
   Play,
 } from "lucide-react";
@@ -23,7 +22,6 @@ import { api } from "../services/api";
 export const Profile = () => {
   const { username } = useParams<{ username: string }>();
   const { user: currentUser, updateUser } = useAuthStore();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isOwnProfile = currentUser?.username === username;
   const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
@@ -55,18 +53,21 @@ export const Profile = () => {
   const { data: following, isLoading: followingLoading } = useQuery({
     queryKey: ["profile-following", user?.id],
     queryFn: () => api.profiles.getFollowing(user?.id || ""),
-    enabled: !!user?.id && activeTab === "following",
+    enabled: !!user?.id,
   });
 
   const { data: followers, isLoading: followersLoading } = useQuery({
     queryKey: ["profile-followers", user?.id],
     queryFn: () => api.profiles.getFollowers(user?.id || ""),
-    enabled: !!user?.id && activeTab === "followers",
+    enabled: !!user?.id,
   });
 
   const computedTotalLikes = [...(posts || []), ...(reels || [])].reduce((acc, curr) => acc + (curr.likes || 0), 0);
   const displayFollowers = followers?.length ?? user?.followers ?? 0;
   const displayFollowing = following?.length ?? user?.following ?? 0;
+  const isFollowingProfile =
+    Boolean(user?.isFollowing) ||
+    Boolean(followers?.some((follower: any) => String(follower.id) === String(currentUser?.id)));
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: any) => api.profiles.update(data),
@@ -82,19 +83,10 @@ export const Profile = () => {
     },
   });
 
-  const chatMutation = useMutation({
-    mutationFn: (userId: string) => api.chats.createConversation([userId]),
-    onSuccess: () => {
-      navigate(
-        `/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`,
-      );
-    },
-  });
-
   const followMutation = useMutation({
     mutationFn: () => {
       if (!user) return Promise.reject();
-      return user.isFollowing
+      return isFollowingProfile
         ? api.profiles.unfollow(user.id)
         : api.profiles.follow(user.id);
     },
@@ -106,8 +98,8 @@ export const Profile = () => {
         if (!old) return old;
         return {
           ...old,
-          isFollowing: !old.isFollowing,
-          followers: old.isFollowing ? old.followers - 1 : old.followers + 1,
+          isFollowing: !isFollowingProfile,
+          followers: isFollowingProfile ? old.followers - 1 : old.followers + 1,
         };
       });
 
@@ -116,7 +108,7 @@ export const Profile = () => {
       
       queryClient.setQueryData(["profile-followers", user.id], (old: any) => {
         if (!old) return old;
-        if (previousProfile?.isFollowing) {
+        if (isFollowingProfile) {
           return old.filter((u: any) => u.id !== currentUser?.id);
         } else {
           return [...old, currentUser];
@@ -220,21 +212,33 @@ export const Profile = () => {
             </button>
           ) : (
             <>
-              <Link 
-                to={`/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`}
-                className="p-2.5 flex items-center justify-center bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors disabled:opacity-50"
-              >
-                <MessageSquare size={20} />
-              </Link>
+              {isFollowingProfile ? (
+                <Link
+                  to={`/messages?userId=${encodeURIComponent(user.id)}&username=${encodeURIComponent(user.username)}&name=${encodeURIComponent(user.fullName)}&avatar=${encodeURIComponent(user.avatarUrl || "")}`}
+                  className="p-2.5 flex items-center justify-center bg-black/50 backdrop-blur-md border border-white/10 text-white rounded-xl hover:bg-black/70 transition-colors"
+                  aria-label="Message user"
+                  title="Message"
+                >
+                  <MessageSquare size={20} />
+                </Link>
+              ) : (
+                <button
+                  onClick={() => followMutation.mutate()}
+                  disabled={followMutation.isPending}
+                  className="px-4 py-2 rounded-xl text-sm font-medium bg-black/50 backdrop-blur-md border border-white/10 text-white hover:bg-black/70 transition-colors disabled:opacity-50"
+                >
+                  Follow to message
+                </button>
+              )}
               <button
                 onClick={() => followMutation.mutate()}
                 className={`px-6 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  user.isFollowing 
-                  ? "bg-white/10 text-white border border-white/10" 
+                  isFollowingProfile
+                  ? "bg-white/10 text-white border border-white/10"
                   : "bg-white text-black"
                 }`}
               >
-                {user.isFollowing ? "Following" : "Follow"}
+                {isFollowingProfile ? "Following" : "Follow"}
               </button>
             </>
           )}

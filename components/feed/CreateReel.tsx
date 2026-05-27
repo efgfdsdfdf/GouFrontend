@@ -59,22 +59,10 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
         alert("Discover only accepts video reels.");
         return;
       }
-      
-      const url = URL.createObjectURL(file);
-      const videoElement = document.createElement("video");
-      videoElement.preload = "metadata";
-      videoElement.onloadedmetadata = () => {
-        window.URL.revokeObjectURL(url);
-        if (videoElement.duration > 60) {
-          alert("Discover reels must be 1 minute or less");
-          if (cameraInputRef.current) cameraInputRef.current.value = "";
-          if (galleryInputRef.current) galleryInputRef.current.value = "";
-          return;
-        }
-        setVideo(file);
-        setPreview(URL.createObjectURL(file));
-      };
-      videoElement.src = url;
+
+      if (preview) URL.revokeObjectURL(preview);
+      setVideo(file);
+      setPreview(URL.createObjectURL(file));
     }
   };
 

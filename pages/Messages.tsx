@@ -13,7 +13,6 @@ import {
   Plus,
   Search,
   Send,
-  Share2,
   UserPlus,
   X,
 } from "lucide-react";
@@ -86,6 +85,20 @@ export const Messages = () => {
     },
     onError: () => {
       setPendingChat(null);
+    },
+  });
+
+  const followSuggestionMutation = useMutation({
+    mutationFn: (userId: string) => api.profiles.follow(userId),
+    onSuccess: (_data, userId) => {
+      queryClient.setQueryData(["message-suggestions"], (old: any[] = []) =>
+        old.map((person) =>
+          String(person.id) === String(userId)
+            ? { ...person, isFollowing: true, followers: (person.followers || 0) + 1 }
+            : person,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: ["message-suggestions"] });
     },
   });
 
@@ -229,6 +242,11 @@ export const Messages = () => {
   };
 
   const startChatWithUser = (person: any) => {
+    if (!person.isFollowing) {
+      followSuggestionMutation.mutate(person.id);
+      return;
+    }
+
     const existingChat = chats.find((chat: any) => String(chat.partner.id) === String(person.id));
     setIsSuggestionsOpen(false);
     setSearchParams({}, { replace: true });
@@ -456,14 +474,6 @@ export const Messages = () => {
                     )}
                   </p>
                 </Link>
-                <button
-                  onClick={importContacts}
-                  className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
-                  aria-label="Import contacts"
-                  title="Import contacts"
-                >
-                  <Share2 size={20} />
-                </button>
                 <button
                   onClick={() => setIsSuggestionsOpen(true)}
                   className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
@@ -719,7 +729,7 @@ export const Messages = () => {
                           )}
                         </div>
                         <span className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black">
-                          Message
+                          {person.isFollowing ? "Message" : "Follow"}
                         </span>
                       </button>
                     );

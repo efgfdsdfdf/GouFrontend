@@ -47,9 +47,8 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
-      reader.readAsDataURL(file);
+      if (preview?.startsWith("blob:")) URL.revokeObjectURL(preview);
+      setPreview(URL.createObjectURL(file));
     }
   };
 
@@ -109,7 +108,7 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
                       <input
                         type="file"
                         className="hidden"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         capture="environment"
                         onChange={handleImageChange}
                       />
@@ -124,7 +123,7 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
                       <input
                         type="file"
                         className="hidden"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         onChange={handleImageChange}
                       />
                     </label>
@@ -140,13 +139,23 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
 
               {preview && (
                 <div className="mb-8 relative aspect-square max-h-48 rounded-2xl overflow-hidden border border-white/10">
-                  <img
-                    src={preview}
-                    className="w-full h-full object-cover"
-                    alt="Preview"
-                  />
+                  {image?.type.startsWith("video/") ? (
+                    <video
+                      src={preview}
+                      className="w-full h-full object-cover"
+                      controls
+                      playsInline
+                    />
+                  ) : (
+                    <img
+                      src={preview}
+                      className="w-full h-full object-cover"
+                      alt="Preview"
+                    />
+                  )}
                   <button
                     onClick={() => {
+                      if (preview.startsWith("blob:")) URL.revokeObjectURL(preview);
                       setImage(null);
                       setPreview(null);
                     }}

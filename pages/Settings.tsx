@@ -6,7 +6,7 @@ import { api } from '../services/api';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const Settings = () => {
-  const { user, logout, login } = useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<string | null>(null);
   
@@ -14,14 +14,16 @@ export const Settings = () => {
   const [fullName, setFullName] = useState(user?.fullName || "");
   const [bio, setBio] = useState(user?.bio || "");
   const [university, setUniversity] = useState(user?.university || "");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || "");
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: any) => api.profiles.update(data),
     onSuccess: (updatedUser) => {
-      // Re-initialize local user state
-      const token = localStorage.getItem('access_token');
-      if (token) login(updatedUser, token);
+      updateUser(updatedUser);
+      setAvatarFile(null);
+      setAvatarPreview(updatedUser.avatarUrl || "");
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
       queryClient.invalidateQueries({ queryKey: ["profile", user?.username] });
@@ -30,7 +32,7 @@ export const Settings = () => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfileMutation.mutate({ fullName, bio, university });
+    updateProfileMutation.mutate({ fullName, bio, university, avatar: avatarFile });
   };
 
   const tabs = [
@@ -58,16 +60,28 @@ export const Settings = () => {
 
             <form onSubmit={handleSaveProfile} className="space-y-6">
               <div className="flex items-center gap-6 p-6 glass-panel rounded-3xl border border-white/5">
-                <div className="relative group">
-                  <img 
-                    src={user?.avatarUrl} 
-                    alt="Profile" 
+                <label className="relative group cursor-pointer">
+                  <img
+                    src={avatarPreview || user?.avatarUrl}
+                    alt="Profile"
                     className="w-20 h-20 rounded-2xl object-cover border border-white/10"
                   />
                   <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
                     <Camera size={20} className="text-white" />
                   </div>
-                </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setAvatarFile(file);
+                      if (avatarPreview?.startsWith("blob:")) URL.revokeObjectURL(avatarPreview);
+                      setAvatarPreview(URL.createObjectURL(file));
+                    }}
+                  />
+                </label>
                 <div>
                   <h3 className="font-bold text-white">Profile Photo</h3>
                   <p className="text-xs text-white/40 mt-1">Recommended size: 400x400px</p>
