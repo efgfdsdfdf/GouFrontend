@@ -141,10 +141,28 @@ export const Dashboard = () => {
 
       <div className="space-y-6">
         {status === "pending" ? (
-          <div className="flex flex-col items-center justify-center min-h-[50vh]">
-            <div className="w-20 h-20 rounded-3xl bg-white/5 flex items-center justify-center font-serif font-black text-4xl text-white/20 animate-pulse shadow-[0_0_40px_rgba(255,255,255,0.05)] border border-white/10">
-              G
-            </div>
+          <div className="space-y-6">
+            {[1, 2, 3, 4, 5].map((key) => (
+              <div key={key} className="glass-panel rounded-2xl p-4 md:p-5 border border-white/5 shadow-xl animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-white/10" />
+                  <div className="flex-1">
+                    <div className="h-4 w-32 bg-white/10 rounded-md mb-2" />
+                    <div className="h-3 w-20 bg-white/5 rounded-md" />
+                  </div>
+                </div>
+                <div className="space-y-3 mb-4">
+                  <div className="h-3 w-full bg-white/10 rounded-md" />
+                  <div className="h-3 w-5/6 bg-white/10 rounded-md" />
+                  <div className="h-3 w-4/6 bg-white/10 rounded-md" />
+                </div>
+                <div className="h-64 w-full bg-white/5 rounded-xl border border-white/5 mb-4" />
+                <div className="flex items-center gap-4 border-t border-white/5 pt-4">
+                  <div className="h-8 w-16 bg-white/10 rounded-lg" />
+                  <div className="h-8 w-16 bg-white/10 rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : status === "error" ? (
           <div className="glass-panel p-12 text-center rounded-2xl">
