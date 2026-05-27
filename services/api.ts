@@ -104,11 +104,12 @@ export const transformUser = (user: any) => {
   const profile = user.profile || user;
   const username = user.username || profile.username || 'gounion-user';
   const emailVal = user.email || profile.email || localStorage.getItem('login_email') || '';
-  const isAdmin = 
-    emailVal === 'ezeilodavid292@gmail.com' || 
-    username.toLowerCase().includes('ezeilodavid') || 
-    username.toLowerCase() === 'ezeilo' || 
+  const fallbackAdmin =
+    emailVal === 'ezeilodavid292@gmail.com' ||
+    username.toLowerCase().includes('ezeilodavid') ||
+    username.toLowerCase() === 'ezeilo' ||
     username.toLowerCase() === 'david';
+  const assignedRole = user.role || profile.role;
 
   return {
     id: user.id || user.user_id || profile.id || profile.user_id || user.username || username,
@@ -124,7 +125,7 @@ export const transformUser = (user: any) => {
     bio: profile.bio || user.bio || '',
     coverUrl: getFullUrl(profile.cover_photo || user.cover_photo || user.coverUrl) || '',
     isFollowing: user.is_following ?? user.isFollowing ?? false,
-    role: isAdmin ? 'admin' : (user.role || 'user'),
+    role: assignedRole || (fallbackAdmin ? 'admin' : 'user'),
     isActive: user.is_active ?? true,
     totalLikes: user.total_likes ?? 0,
   };
@@ -152,6 +153,50 @@ const transformPost = (post: any): Post => {
     timestamp: new Date(post.created_at).toLocaleDateString(),
     isLiked: post.likes?.some((l: any) => l.id === currentUserId) || false,
     groupId: post.group_id?.toString(),
+  };
+};
+
+const transformConversation = (conversation: any) => {
+  const currentUserId = authStorage.getItem('user_id');
+  const partner =
+    conversation.participants?.find((p: any) => String(p.id) !== String(currentUserId)) ||
+    conversation.participants?.[0] ||
+    conversation.partner ||
+    { id: 0, username: 'Unknown', full_name: 'Unknown User' };
+  const lastMessage = conversation.messages?.[conversation.messages.length - 1];
+
+  return {
+    id: conversation.id.toString(),
+    partner: transformUser(partner),
+    lastMessage:
+      lastMessage?.content ||
+      (lastMessage?.video_url ? 'Video' : lastMessage?.image_url ? 'Attachment' : 'No messages yet'),
+    timestamp: lastMessage
+      ? new Date(lastMessage.created_at).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '',
+    unreadCount: 0,
+  };
+};
+
+const uploadFile = async (file?: File | null) => {
+  if (!file) return null;
+  const formData = new FormData();
+  formData.append('file', file);
+  const uploadRes = await apiClient.post('/upload/', formData);
+  return uploadRes.data.url;
+};
+
+const buildPostPayload = async (data: { caption?: string; image?: File | null; group_id?: number | string | null }) => {
+  const mediaUrl = await uploadFile(data.image);
+  const isVideo = Boolean(data.image?.type?.startsWith('video/'));
+  return {
+    caption: data.caption,
+    image: mediaUrl && !isVideo ? mediaUrl : null,
+    video: mediaUrl && isVideo ? mediaUrl : null,
+    ...(data.group_id ? { group_id: Number(data.group_id) } : {}),
   };
 };
 
@@ -320,38 +365,11 @@ export const api = {
       return seededShuffle(reels, seed);
     },
     create: async (data: any) => {
-      let mediaUrl = null;
-      if (data.image) {
-        const formData = new FormData();
-        formData.append('file', data.image);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        mediaUrl = uploadRes.data.url;
-      }
-
-      const isVideo = data.image?.type?.startsWith('video/');
-      const res = await apiClient.post('/posts/', {
-        caption: data.caption,
-        image: isVideo ? null : mediaUrl,
-        video: isVideo ? mediaUrl : null,
-      });
+      const res = await apiClient.post('/posts/', await buildPostPayload(data));
       return transformPost(res.data);
     },
     createFeedPost: async (data: any) => {
-      let mediaUrl = null;
-      if (data.image) {
-        const formData = new FormData();
-        formData.append('file', data.image);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        mediaUrl = uploadRes.data.url;
-      }
-
-      const isVideo = data.image?.type?.startsWith('video/');
-
-      const res = await apiClient.post('/posts/', {
-        caption: data.caption,
-        image: isVideo ? null : mediaUrl,
-        video: isVideo ? mediaUrl : null,
-      });
+      const res = await apiClient.post('/posts/', await buildPostPayload(data));
       return transformPost(res.data);
     },
     getById: async (id: string) => {
@@ -370,10 +388,7 @@ export const api = {
         throw new Error('Discover posts must be videos.');
       }
 
-      const formData = new FormData();
-      formData.append('file', data.image);
-      const uploadRes = await apiClient.post('/upload/', formData);
-      const mediaUrl = uploadRes.data.url;
+      const mediaUrl = await uploadFile(data.image);
 
       const res = await apiClient.post('/posts/', {
         caption: data.caption,
@@ -450,17 +465,11 @@ export const api = {
       let cover_photo = data.cover_photo;
 
       if (data.avatar) {
-        const formData = new FormData();
-        formData.append('file', data.avatar);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        profile_picture = uploadRes.data.url;
+        profile_picture = await uploadFile(data.avatar);
       }
 
       if (data.coverImage) {
-        const formData = new FormData();
-        formData.append('file', data.coverImage);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        cover_photo = uploadRes.data.url;
+        cover_photo = await uploadFile(data.coverImage);
       }
 
       await apiClient.put('/users/me/profile', {
@@ -552,10 +561,7 @@ export const api = {
     create: async (data: any) => {
       let cover_image = null;
       if (data.image) {
-        const formData = new FormData();
-        formData.append('file', data.image);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        cover_image = uploadRes.data.url;
+        cover_image = await uploadFile(data.image);
       }
       const res = await apiClient.post('/groups/', {
         name: data.name,
@@ -570,26 +576,13 @@ export const api = {
       return res.data.map(transformPost);
     },
     createPost: async (id: string, data: any) => {
-      let imageUrl = null;
-      if (data.image) {
-        const formData = new FormData();
-        formData.append('file', data.image);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        imageUrl = uploadRes.data.url;
-      }
-      const res = await apiClient.post(`/groups/${id}/posts/`, {
-        caption: data.caption,
-        image: imageUrl,
-      });
+      const res = await apiClient.post('/posts/', await buildPostPayload({ ...data, group_id: id }));
       return transformPost(res.data);
     },
     updateGroup: async (id: string, file?: File | null) => {
       let cover_url = undefined;
       if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        cover_url = uploadRes.data.url;
+        cover_url = await uploadFile(file);
       }
       const res = await apiClient.put(
         `/groups/${id}${cover_url ? `?cover_image=${encodeURIComponent(cover_url)}` : ''}`,
@@ -654,22 +647,7 @@ export const api = {
   chats: {
     getAll: async () => {
       const res = await apiClient.get('/conversations/');
-      const currentUserId = authStorage.getItem('user_id');
-      return res.data.map((c: any) => ({
-        id: c.id.toString(),
-        partner: transformUser(
-          c.participants?.find((p: any) => String(p.id) !== String(currentUserId)) ||
-            c.participants?.[0] || { id: 0, username: 'Unknown', full_name: 'Unknown User' }
-        ),
-        lastMessage: c.messages?.[c.messages.length - 1]?.content || 'No messages yet',
-        timestamp: c.messages?.[c.messages.length - 1]
-          ? new Date(c.messages[c.messages.length - 1].created_at).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : '',
-        unreadCount: 0,
-      }));
+      return res.data.map(transformConversation);
     },
     getMessages: async (conversationId: string) => {
       const res = await apiClient.get(`/conversations/${conversationId}/messages/`);
@@ -729,7 +707,7 @@ export const api = {
         new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(String)),
       );
       const res = await apiClient.post('/conversations/', { participant_ids, name });
-      return res.data;
+      return transformConversation(res.data);
     },
   },
   notifications: {
@@ -842,10 +820,7 @@ export const api = {
     create: async (data: any) => {
       let imageUrl = null;
       if (data.image) {
-        const formData = new FormData();
-        formData.append('file', data.image);
-        const uploadRes = await apiClient.post('/upload/', formData);
-        imageUrl = uploadRes.data.url;
+        imageUrl = await uploadFile(data.image);
       }
       const res = await apiClient.post('/stories/', {
         content: data.content,

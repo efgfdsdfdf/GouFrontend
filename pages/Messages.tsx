@@ -14,6 +14,7 @@ import {
   Search,
   Send,
   Share2,
+  UserPlus,
   X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,6 +40,10 @@ export const Messages = () => {
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [pendingChat, setPendingChat] = useState<any | null>(null);
+  const [contactEmails, setContactEmails] = useState<Set<string>>(new Set());
+  const [contactNames, setContactNames] = useState<Set<string>>(new Set());
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 768px)").matches);
 
   const { data: chats = [], isLoading: chatsLoading } = useQuery({
@@ -49,12 +54,18 @@ export const Messages = () => {
     staleTime: 30000,
   });
 
+  const { data: suggestedUsers = [], isLoading: suggestionsLoading } = useQuery({
+    queryKey: ["message-suggestions"],
+    queryFn: api.profiles.getSuggestions,
+    staleTime: 1000 * 60 * 5,
+  });
+
   const createChatMutation = useMutation({
     mutationFn: (participantId: string) => api.chats.createConversation([participantId]),
     onSuccess: (newChat) => {
       const normalizedChat = {
         id: newChat.id.toString(),
-        partner: newChat.partner || {
+        partner: newChat.partner?.id ? newChat.partner : {
           id: userIdFromQuery,
           username: queryUsername,
           fullName: queryName,
@@ -64,6 +75,7 @@ export const Messages = () => {
         timestamp: "",
         unreadCount: 0,
       };
+      setPendingChat(null);
       queryClient.setQueryData(["chats"], (old: any[] = []) => {
         const withoutTemp = old.filter((chat) => !chat.id.toString().startsWith("temp-"));
         return [normalizedChat, ...withoutTemp.filter((chat) => chat.id !== normalizedChat.id)];
@@ -71,6 +83,9 @@ export const Messages = () => {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       setSelectedChatId(normalizedChat.id);
       setSearchParams({}, { replace: true });
+    },
+    onError: () => {
+      setPendingChat(null);
     },
   });
 
@@ -109,6 +124,7 @@ export const Messages = () => {
         timestamp: "",
         unreadCount: 0,
       };
+      setPendingChat(tempChat);
       queryClient.setQueryData(["chats"], (old: any[] = []) => {
         if (old.some((chat) => chat.id === tempChatId || String(chat.partner.id) === String(userIdFromQuery))) return old;
         return [tempChat, ...old];
@@ -142,6 +158,7 @@ export const Messages = () => {
   }, [messages, selectedChatId]);
 
   const selectedChat = chats.find((chat: any) => chat.id === selectedChatId);
+  const activeChat = selectedChat || (pendingChat?.id === selectedChatId ? pendingChat : null);
   const isChatPreparing = Boolean(selectedChatId?.startsWith("temp-"));
   const filteredChats = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -151,6 +168,19 @@ export const Messages = () => {
       return name.includes(q);
     });
   }, [chats, searchText]);
+
+  const normalizeContactToken = (value?: string) => value?.trim().toLowerCase() || "";
+
+  const isFromContacts = (person: any) => {
+    const email = normalizeContactToken(person.email);
+    const username = normalizeContactToken(person.username);
+    const fullName = normalizeContactToken(person.fullName);
+    return Boolean(
+      (email && contactEmails.has(email)) ||
+      (username && contactNames.has(username)) ||
+      (fullName && contactNames.has(fullName)),
+    );
+  };
 
   const clearAttachment = () => {
     if (attachmentPreview?.startsWith("blob:")) URL.revokeObjectURL(attachmentPreview);
@@ -169,9 +199,7 @@ export const Messages = () => {
     setIsAttachMenuOpen(false);
   };
 
-  const inviteContacts = async () => {
-    const inviteText = "Join me on GoUnion. Download/open the app and let's connect.";
-    const inviteUrl = window.location.origin;
+  const importContacts = async () => {
     try {
       const nav = navigator as Navigator & {
         contacts?: {
@@ -180,20 +208,50 @@ export const Messages = () => {
       };
 
       if (nav.contacts?.select) {
-        await nav.contacts.select(["name", "tel", "email"], { multiple: true });
-      }
-
-      if (navigator.share) {
-        await navigator.share({ title: "Join GoUnion", text: inviteText, url: inviteUrl });
-      } else {
-        await navigator.clipboard.writeText(`${inviteText}\n${inviteUrl}`);
+        const contacts = await nav.contacts.select(["name", "email"], { multiple: true });
+        setContactEmails(new Set(contacts.flatMap((contact) => contact.email || []).map(normalizeContactToken).filter(Boolean)));
+        setContactNames(new Set(contacts.flatMap((contact) => contact.name || []).map(normalizeContactToken).filter(Boolean)));
+      } else if (navigator.share) {
+        await navigator.share({
+          title: "Join GoUnion",
+          text: "Join me on GoUnion. Download/open the app and let's connect.",
+          url: window.location.origin,
+        });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(`Join me on GoUnion.\n${window.location.origin}`);
         alert("Invite link copied.");
       }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
-        console.error("Invite failed", err);
+        console.error("Contacts failed", err);
       }
     }
+  };
+
+  const startChatWithUser = (person: any) => {
+    const existingChat = chats.find((chat: any) => String(chat.partner.id) === String(person.id));
+    setIsSuggestionsOpen(false);
+    setSearchParams({}, { replace: true });
+    if (existingChat) {
+      setSelectedChatId(existingChat.id);
+      return;
+    }
+
+    const tempChatId = `temp-${person.id}`;
+    const tempChat = {
+      id: tempChatId,
+      partner: person,
+      lastMessage: "Starting conversation...",
+      timestamp: "",
+      unreadCount: 0,
+    };
+    setPendingChat(tempChat);
+    setSelectedChatId(tempChatId);
+    queryClient.setQueryData(["chats"], (old: any[] = []) => [
+      tempChat,
+      ...old.filter((chat) => String(chat.partner.id) !== String(person.id)),
+    ]);
+    createChatMutation.mutate(person.id);
   };
 
   const sendMessageMutation = useMutation({
@@ -297,10 +355,10 @@ export const Messages = () => {
               </div>
             </Link>
             <button
-              onClick={inviteContacts}
+              onClick={() => setIsSuggestionsOpen(true)}
               className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
-              aria-label="Invite contacts"
-              title="Invite contacts"
+              aria-label="Suggested contacts"
+              title="Suggested contacts"
             >
               <MoreVertical size={20} />
             </button>
@@ -364,7 +422,7 @@ export const Messages = () => {
         </aside>
 
         <section className={`flex-1 bg-[#030303] flex-col ${selectedChatId ? "flex" : "hidden md:flex"}`}>
-          {selectedChat ? (
+          {activeChat ? (
             <>
               <header className="h-16 px-3 md:px-5 bg-[#0a0a0c]/95 flex items-center gap-3 border-b border-white/5">
                 <button
@@ -380,33 +438,38 @@ export const Messages = () => {
                   <ArrowLeft size={21} />
                 </button>
                 <img
-                  src={selectedChat.partner.avatarUrl}
-                  alt={selectedChat.partner.fullName}
+                  src={activeChat.partner.avatarUrl}
+                  alt={activeChat.partner.fullName}
                   className="h-10 w-10 rounded-full object-cover bg-white/10 border border-white/10"
                 />
-                <Link to={`/profile/${selectedChat.partner.username}`} className="min-w-0 flex-1">
-                  <p className="text-[15px] font-medium text-white truncate">{selectedChat.partner.fullName}</p>
+                <Link to={`/profile/${activeChat.partner.username}`} className="min-w-0 flex-1">
+                  <p className="text-[15px] font-medium text-white truncate">{activeChat.partner.fullName}</p>
                   <p className="text-xs truncate transition-colors">
-                    {selectedChat.partner.isOnline ? (
+                    {activeChat.partner.isOnline ? (
                       <span className="text-green-500 font-medium flex items-center gap-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> Online
                       </span>
-                    ) : selectedChat.partner.lastSeen ? (
-                      <span className="text-white/40">Last seen {selectedChat.partner.lastSeen}</span>
+                    ) : activeChat.partner.lastSeen ? (
+                      <span className="text-white/40">Last seen {activeChat.partner.lastSeen}</span>
                     ) : (
                       <span className="text-white/40">Offline • Tap for profile</span>
                     )}
                   </p>
                 </Link>
                 <button
-                  onClick={inviteContacts}
+                  onClick={importContacts}
                   className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
-                  aria-label="Invite contacts"
-                  title="Invite contacts"
+                  aria-label="Import contacts"
+                  title="Import contacts"
                 >
                   <Share2 size={20} />
                 </button>
-                <button className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center">
+                <button
+                  onClick={() => setIsSuggestionsOpen(true)}
+                  className="h-10 w-10 rounded-xl text-white/50 hover:text-white hover:bg-white/5 flex items-center justify-center"
+                  aria-label="Suggested contacts"
+                  title="Suggested contacts"
+                >
                   <MoreVertical size={20} />
                 </button>
               </header>
@@ -584,6 +647,89 @@ export const Messages = () => {
           )}
         </section>
       </div>
+
+      <AnimatePresence>
+        {isSuggestionsOpen && (
+          <div className="fixed inset-0 z-[220] flex items-end justify-center p-0 sm:items-center sm:p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setIsSuggestionsOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 24, scale: 0.98 }}
+              className="relative flex max-h-[82dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[2rem] border border-white/10 bg-[#0b0b0e] shadow-2xl sm:rounded-[2rem]"
+            >
+              <div className="flex items-center justify-between border-b border-white/5 p-5">
+                <div>
+                  <h2 className="text-lg font-black text-white">Suggested contacts</h2>
+                  <p className="mt-1 text-xs text-white/40">People with GoUnion accounts you can message.</p>
+                </div>
+                <button
+                  onClick={() => setIsSuggestionsOpen(false)}
+                  className="h-10 w-10 rounded-xl text-white/50 hover:bg-white/5 hover:text-white"
+                  aria-label="Close suggestions"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="border-b border-white/5 p-4">
+                <button
+                  type="button"
+                  onClick={importContacts}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-widest text-white/70 hover:bg-white/10 hover:text-white"
+                >
+                  <UserPlus size={16} />
+                  Check phone contacts
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-3">
+                {suggestionsLoading ? (
+                  <div className="py-12 text-center text-sm text-white/40">Loading contacts...</div>
+                ) : suggestedUsers.length === 0 ? (
+                  <div className="py-12 text-center text-sm text-white/40">No account suggestions right now.</div>
+                ) : (
+                  suggestedUsers.map((person: any) => {
+                    const fromContacts = isFromContacts(person);
+                    return (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => startChatWithUser(person)}
+                        className="flex w-full items-center gap-3 rounded-2xl p-3 text-left transition-colors hover:bg-white/5"
+                      >
+                        <img
+                          src={person.avatarUrl || `https://ui-avatars.com/api/?name=${person.fullName}`}
+                          alt={person.fullName}
+                          className="h-12 w-12 rounded-full border border-white/10 object-cover"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-white">{person.fullName}</p>
+                          <p className="truncate text-xs text-white/40">@{person.username}</p>
+                          {fromContacts && (
+                            <p className="mt-1 text-[10px] font-black uppercase tracking-widest text-primary">
+                              From your contacts
+                            </p>
+                          )}
+                        </div>
+                        <span className="rounded-xl bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-widest text-black">
+                          Message
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

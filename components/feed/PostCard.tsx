@@ -106,8 +106,20 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
   const deleteMutation = useMutation({
     mutationFn: () => api.posts.delete(post.id),
-    onSuccess: () => {
-      toast("Post deleted successfully", "success");
+    onMutate: async () => {
+      setShowMenu(false);
+      await queryClient.cancelQueries({ queryKey: ["feed"] });
+      await queryClient.cancelQueries({ queryKey: ["discover-reels"] });
+      await queryClient.cancelQueries({ queryKey: ["profile-posts", post.author.username] });
+      if (post.groupId) {
+        await queryClient.cancelQueries({ queryKey: ["group-posts", post.groupId] });
+      }
+
+      const previousFeed = queryClient.getQueriesData({ queryKey: ["feed"] });
+      const previousDiscover = queryClient.getQueriesData({ queryKey: ["discover-reels"] });
+      const previousProfile = queryClient.getQueryData(["profile-posts", post.author.username]);
+      const previousGroup = post.groupId ? queryClient.getQueryData(["group-posts", post.groupId]) : undefined;
+
       queryClient.setQueriesData({ queryKey: ["feed"] }, (old: any) => {
         if (!old?.pages) return old;
         return { ...old, pages: old.pages.map((page: any[]) => page.filter((item) => item.id !== post.id)) };
@@ -124,8 +136,24 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
           Array.isArray(old) ? old.filter((item) => item.id !== post.id) : old,
         );
       }
+      return { previousFeed, previousDiscover, previousProfile, previousGroup };
+    },
+    onSuccess: () => {
+      toast("Post deleted successfully", "success");
+    },
+    onError: (_err, _vars, context: any) => {
+      context?.previousFeed?.forEach(([key, value]: any) => queryClient.setQueryData(key, value));
+      context?.previousDiscover?.forEach(([key, value]: any) => queryClient.setQueryData(key, value));
+      queryClient.setQueryData(["profile-posts", post.author.username], context?.previousProfile);
+      if (post.groupId) {
+        queryClient.setQueryData(["group-posts", post.groupId], context?.previousGroup);
+      }
+      toast("Unable to delete post", "error");
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
       queryClient.invalidateQueries({ queryKey: ["profile-posts", post.author.username] });
       if (post.groupId) {
         queryClient.invalidateQueries({ queryKey: ["group-posts", post.groupId] });
