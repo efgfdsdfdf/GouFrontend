@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CommentSection } from "../components/feed/CommentSection";
+import { CreateReel } from "../components/feed/CreateReel";
 import { api } from "../services/api";
 import { Post } from "../types";
 import { useAuthStore } from "../store";
@@ -33,6 +34,7 @@ export const Discover = () => {
   const { user: currentUser } = useAuthStore();
   const [isMuted, setIsMuted] = useState(false);
   const [activeCommentPost, setActiveCommentPost] = useState<Post | null>(null);
+  const [isCreateReelOpen, setIsCreateReelOpen] = useState(false);
   const [loadedMedia, setLoadedMedia] = useState<Record<string, boolean>>({});
   const [discoverSeed, setDiscoverSeed] = useState(() => Math.random());
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -398,6 +400,14 @@ export const Discover = () => {
           </>
         )}
       </AnimatePresence>
+
+      <div className="fixed bottom-24 right-4 z-[100] md:right-8">
+        <button onClick={() => setIsCreateReelOpen(true)} className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105">
+          <Camera className="h-6 w-6" />
+        </button>
+      </div>
+
+      <CreateReel isOpen={isCreateReelOpen} onClose={() => setIsCreateReelOpen(false)} />
 
       <style dangerouslySetInnerHTML={{ __html: `
         .hide-scrollbar::-webkit-scrollbar { display: none; }

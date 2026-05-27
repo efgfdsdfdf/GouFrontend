@@ -64,6 +64,10 @@ export const Profile = () => {
     enabled: !!user?.id && activeTab === "followers",
   });
 
+  const computedTotalLikes = [...(posts || []), ...(reels || [])].reduce((acc, curr) => acc + (curr.likes || 0), 0);
+  const displayFollowers = followers?.length ?? user?.followers ?? 0;
+  const displayFollowing = following?.length ?? user?.following ?? 0;
+
   const updateProfileMutation = useMutation({
     mutationFn: (data: any) => api.profiles.update(data),
     onSuccess: () => {
@@ -238,15 +242,15 @@ export const Profile = () => {
             
             <div className="flex flex-wrap gap-x-8 gap-y-4 mt-8 pt-6 border-t border-white/5">
               <div className="cursor-pointer" onClick={() => setActiveTab("followers")}>
-                <p className="text-white font-serif text-xl">{user.followers}</p>
+                <p className="text-white font-serif text-xl">{displayFollowers}</p>
                 <p className="text-[10px] text-white/30 uppercase font-bold tracking-wider">Followers</p>
               </div>
               <div className="cursor-pointer" onClick={() => setActiveTab("following")}>
-                <p className="text-white font-serif text-xl">{user.following}</p>
+                <p className="text-white font-serif text-xl">{displayFollowing}</p>
                 <p className="text-[10px] text-white/30 uppercase font-bold tracking-wider">Following</p>
               </div>
               <div>
-                <p className="text-primary font-serif text-xl">{user.totalLikes || 0}</p>
+                <p className="text-primary font-serif text-xl">{computedTotalLikes}</p>
                 <p className="text-[10px] text-white/30 uppercase font-bold tracking-wider">Total Likes</p>
               </div>
             </div>
