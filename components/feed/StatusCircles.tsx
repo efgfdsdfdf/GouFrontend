@@ -21,6 +21,12 @@ export const StatusCircles = () => {
     refetchInterval: 60000,
   });
 
+  const { data: suggestedUsers = [] } = useQuery({
+    queryKey: ["story-suggestions"],
+    queryFn: api.profiles.getSuggestions,
+    staleTime: 60000,
+  });
+
   const groupedStories = storiesFeed.reduce((acc: any, story: any) => {
     const userId = story.user.id;
     if (!acc[userId]) {
@@ -38,14 +44,19 @@ export const StatusCircles = () => {
     (group: any) => group.user.id !== user?.id,
   );
 
+  const usersWithStoriesIds = Object.keys(groupedStories);
+  const usersWithoutStories = suggestedUsers.filter(
+    (u: any) => !usersWithStoriesIds.includes(String(u.id)) && String(u.id) !== String(user?.id)
+  );
+
   const openViewer = (group: any) => {
     setSelectedUserStories(group.stories);
     setViewerUser(group.user);
     setIsViewerOpen(true);
   };
 
-  const getStoryRingClass = (stories: any[]) =>
-    stories.length > 0 && stories.every((story) => story.isViewed)
+  const getStoryRingClass = (stories: any[], isOwn: boolean = false) =>
+    !isOwn && stories.length > 0 && stories.every((story) => story.isViewed)
       ? "bg-white/15 opacity-60 grayscale"
       : "story-ring shadow-[0_0_20px_rgba(196,255,14,0.15)]";
 
@@ -55,7 +66,7 @@ export const StatusCircles = () => {
       <div className="flex flex-col items-center gap-2 group cursor-pointer shrink-0">
         <div
           onClick={() => myStories.length > 0 ? openViewer({ stories: myStories, user }) : setIsModalOpen(true)}
-          className={`relative w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${myStories.length > 0 ? getStoryRingClass(myStories) : 'bg-white/10'}`}
+          className={`relative w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${myStories.length > 0 ? getStoryRingClass(myStories, true) : 'bg-white/10'}`}
         >
           <div className="w-full h-full rounded-full border-2 border-[#030303] overflow-hidden flex items-center justify-center bg-white/5">
             {user?.avatarUrl ? (
@@ -96,7 +107,7 @@ export const StatusCircles = () => {
           onClick={() => openViewer(group)}
           className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
         >
-          <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${getStoryRingClass(group.stories)}`}>
+          <div className={`w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${getStoryRingClass(group.stories, false)}`}>
             <div className="w-full h-full rounded-full border-2 border-[#030303] overflow-hidden">
               <img
                 src={group.user.avatarUrl || `https://ui-avatars.com/api/?name=${group.user.fullName}`}
@@ -108,6 +119,28 @@ export const StatusCircles = () => {
           </div>
           <span className="text-xs text-white/50 truncate w-16 text-center">
             {group.user.username}
+          </span>
+        </div>
+      ))}
+
+      {/* Users without stories */}
+      {usersWithoutStories.map((u: any) => (
+        <div
+          key={u.id}
+          className="flex flex-col items-center gap-2 shrink-0 group opacity-70"
+        >
+          <div className="w-16 h-16 rounded-full p-[2px] transition-all duration-300 bg-white/10">
+            <div className="w-full h-full rounded-full border-2 border-[#030303] overflow-hidden">
+              <img
+                src={u.avatarUrl || `https://ui-avatars.com/api/?name=${u.fullName}`}
+                alt={u.username}
+                className="w-full h-full object-cover grayscale opacity-50"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
+          <span className="text-xs text-white/40 truncate w-16 text-center">
+            {u.username}
           </span>
         </div>
       ))}

@@ -36,30 +36,35 @@ export const Profile = () => {
     queryKey: ["profile", username],
     queryFn: () => api.profiles.get(username || ""),
     enabled: !!username,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: posts, isLoading: postsLoading } = useQuery({
     queryKey: ["profile-posts", username],
     queryFn: () => api.profiles.getPosts(username || ""),
     enabled: !!username,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: reels, isLoading: reelsLoading } = useQuery({
     queryKey: ["profile-reels", username],
     queryFn: () => api.profiles.getReels(username || ""),
     enabled: !!username,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: following, isLoading: followingLoading } = useQuery({
     queryKey: ["profile-following", user?.id],
     queryFn: () => api.profiles.getFollowing(user?.id || ""),
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: followers, isLoading: followersLoading } = useQuery({
     queryKey: ["profile-followers", user?.id],
     queryFn: () => api.profiles.getFollowers(user?.id || ""),
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5,
   });
 
   const computedTotalLikes = [...(posts || []), ...(reels || [])].reduce((acc, curr) => acc + (curr.likes || 0), 0);

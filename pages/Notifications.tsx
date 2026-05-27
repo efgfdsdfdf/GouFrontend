@@ -73,16 +73,8 @@ export const Notifications = () => {
     },
   });
 
-  const hasMarkedRead = React.useRef(false);
-
-  useEffect(() => {
-    const hasUnread = notifications?.some((notification: any) => !notification.read);
-    if (!hasMarkedRead.current && hasUnread) {
-      hasMarkedRead.current = true;
-      markReadMutation.mutate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notifications]);
+  // The effect to auto-mark read has been removed so notifications remain unread
+  // until the user specifically clicks on one.
 
   return (
     <div className="max-w-3xl mx-auto w-full pb-24 pt-8">

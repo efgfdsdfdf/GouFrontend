@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Camera,
+  Check,
   CheckCheck,
   Image as ImageIcon,
   FileText,
@@ -59,6 +60,10 @@ export const Messages = () => {
     queryFn: api.profiles.getSuggestions,
     staleTime: 1000 * 60 * 5,
   });
+
+  const filteredSuggestedUsers = suggestedUsers.filter(
+    (person: any) => !chats.some((chat: any) => String(chat.partner.id) === String(person.id))
+  );
 
   const createChatMutation = useMutation({
     mutationFn: (participantId: string) => api.chats.createConversation([participantId]),
@@ -522,9 +527,21 @@ export const Messages = () => {
                           onClick={() => {
                             if (activeChat?.partner?.id) createChatMutation.mutate(activeChat.partner.id);
                           }}
-                          className="mt-5 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black"
+                          className="mt-5 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black w-full"
                         >
                           Try again
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setChatPrepareError(null);
+                            setSelectedChatId(null);
+                            setPendingChat(null);
+                            setSearchParams({}, { replace: true });
+                          }}
+                          className="mt-3 rounded-xl bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20 transition-colors w-full"
+                        >
+                          Cancel
                         </button>
                       </div>
                     </div>
@@ -576,7 +593,15 @@ export const Messages = () => {
                                 </div>
                                 <div className={`flex items-center gap-1 px-2 text-[10px] ${mine ? "text-white/35" : "text-white/40"}`}>
                                   <span>{msg.fullTimestamp || msg.timestamp}</span>
-                                  {mine && <CheckCheck size={14} className={msg.isRead ? "text-white/60" : "text-white/35"} />}
+                                  {mine && (
+                                    msg.isRead ? (
+                                      <CheckCheck size={14} className="text-blue-500" />
+                                    ) : activeChat?.partner?.isOnline ? (
+                                      <CheckCheck size={14} className="text-white/35" />
+                                    ) : (
+                                      <Check size={14} className="text-white/35" />
+                                    )
+                                  )}
                                 </div>
                               </div>
                             </motion.div>
@@ -746,10 +771,10 @@ export const Messages = () => {
               <div className="flex-1 overflow-y-auto p-3">
                 {suggestionsLoading ? (
                   <div className="py-12 text-center text-sm text-white/40">Loading contacts...</div>
-                ) : suggestedUsers.length === 0 ? (
+                ) : filteredSuggestedUsers.length === 0 ? (
                   <div className="py-12 text-center text-sm text-white/40">No account suggestions right now.</div>
                 ) : (
-                  suggestedUsers.map((person: any) => {
+                  filteredSuggestedUsers.map((person: any) => {
                     const fromContacts = isFromContacts(person);
                     return (
                       <button

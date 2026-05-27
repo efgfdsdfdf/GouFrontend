@@ -228,7 +228,9 @@ const uploadFile = async (file?: File | null) => {
   if (!file) return null;
   const formData = new FormData();
   formData.append('file', file);
-  const uploadRes = await apiClient.post('/media/upload', formData);
+  const uploadRes = await apiClient.post('/media/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return uploadRes.data.url;
 };
 
