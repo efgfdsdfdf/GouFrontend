@@ -35,7 +35,7 @@ export const AdminPanel = () => {
     enabled: activeTab === 'stats',
   });
 
-  const { data: users, isLoading: loadingUsers } = useQuery({
+  const { data: users = [], isLoading: loadingUsers, isError: usersError } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
       try {
@@ -48,7 +48,7 @@ export const AdminPanel = () => {
     enabled: activeTab === 'users',
   });
 
-  const { data: reports, isLoading: loadingReports } = useQuery({
+  const { data: reports = [], isLoading: loadingReports, isError: reportsError } = useQuery({
     queryKey: ['admin-reports'],
     queryFn: api.reports.getAll,
     enabled: activeTab === 'reports',
@@ -100,6 +100,15 @@ export const AdminPanel = () => {
     onError: (err, variables, context) => queryClient.setQueryData(['admin-reports'], context?.previousReports),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['admin-reports'] }),
   });
+
+  const AdminLoading = ({ label }: { label: string }) => (
+    <div className="flex flex-col items-center justify-center gap-4 py-16 text-zinc-500">
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 font-serif text-3xl font-black text-white/25 animate-pulse">
+        G
+      </div>
+      <p className="text-xs font-black uppercase tracking-widest">{label}</p>
+    </div>
+  );
 
   return (
     <div className="w-full pb-20">
@@ -200,8 +209,12 @@ export const AdminPanel = () => {
                 </thead>
                 <tbody>
                   {loadingUsers ? (
-                    <tr><td colSpan={4} className="p-6 text-center text-zinc-500 text-sm font-bold uppercase tracking-widest">Loading Users...</td></tr>
-                  ) : users?.map((u: any) => (
+                    <tr><td colSpan={4}><AdminLoading label="Loading users" /></td></tr>
+                  ) : usersError ? (
+                    <tr><td colSpan={4} className="p-10 text-center text-red-400 text-sm font-bold uppercase tracking-widest">Unable to load users.</td></tr>
+                  ) : users.length === 0 ? (
+                    <tr><td colSpan={4} className="p-10 text-center text-zinc-500 text-sm font-bold uppercase tracking-widest">No users found.</td></tr>
+                  ) : users.map((u: any) => (
                     <tr key={u.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
                       <td className="p-4 flex items-center gap-4">
                         <img src={u.avatarUrl} alt={u.username} className="w-10 h-10 rounded-xl object-cover bg-white/5 border border-white/10" />
@@ -248,10 +261,12 @@ export const AdminPanel = () => {
         {activeTab === 'reports' && (
           <div className="glass-panel rounded-[2rem] p-6 space-y-4 border border-white/10">
             {loadingReports ? (
-              <p className="text-center text-zinc-500 text-sm font-bold uppercase tracking-widest py-10">Loading Reports...</p>
-            ) : reports?.length === 0 ? (
+              <AdminLoading label="Loading reports" />
+            ) : reportsError ? (
+              <p className="text-center text-red-400 py-10 font-bold uppercase tracking-widest text-sm">Unable to load reports.</p>
+            ) : reports.length === 0 ? (
               <p className="text-center text-zinc-500 py-10 font-bold uppercase tracking-widest text-sm">No pending reports.</p>
-            ) : reports?.map((r: any) => (
+            ) : reports.map((r: any) => (
               <div key={r.id} className="p-5 border border-white/10 bg-black/40 rounded-2xl flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">

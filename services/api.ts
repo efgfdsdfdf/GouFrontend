@@ -181,6 +181,49 @@ const transformConversation = (conversation: any) => {
   };
 };
 
+const transformMessage = (m: any) => {
+  const createdAt = m.created_at ? new Date(m.created_at) : new Date();
+  return {
+    id: m.id.toString(),
+    content: m.content,
+    imageUrl: isImageMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+    videoUrl: getFullUrl(m.video_url) || (isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null),
+    fileUrl: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+    fileName: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? m.image_url.split('/').pop() : null,
+    senderId: m.sender_id,
+    timestamp: createdAt.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    dateLabel: createdAt.toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      year: createdAt.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+    }),
+    fullTimestamp: createdAt.toLocaleString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    isRead: m.is_read,
+  };
+};
+
+const normalizeReport = (report: any) => ({
+  ...report,
+  id: report.id,
+  postId: report.post_id ?? report.postId,
+  commentId: report.comment_id ?? report.commentId,
+  user: report.user ? transformUser(report.user) : report.user,
+  post: report.post
+    ? {
+        ...report.post,
+        content: report.post.caption || report.post.content || '',
+      }
+    : report.post,
+});
+
 const uploadFile = async (file?: File | null) => {
   if (!file) return null;
   const formData = new FormData();
@@ -506,7 +549,7 @@ export const api = {
     },
     getSuggestions: async () => {
       try {
-        const res = await apiClient.get('/users/suggestions');
+        const res = await apiClient.get('/users/suggestions?limit=500');
         return res.data.map(transformUser);
       } catch {
         const res = await apiClient.get('/search/users?q=');
@@ -656,20 +699,7 @@ export const api = {
     },
     getMessages: async (conversationId: string) => {
       const res = await apiClient.get(`/conversations/${conversationId}/messages/`);
-      return res.data.map((m: any) => ({
-        id: m.id.toString(),
-        content: m.content,
-        imageUrl: isImageMedia(m.image_url) ? getFullUrl(m.image_url) : null,
-        videoUrl: getFullUrl(m.video_url) || (isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null),
-        fileUrl: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null,
-        fileName: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? m.image_url.split('/').pop() : null,
-        senderId: m.sender_id,
-        timestamp: new Date(m.created_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        isRead: m.is_read,
-      }));
+      return res.data.map(transformMessage);
     },
     sendMessage: async (conversationId: string, content?: string, file?: File | null) => {
       let imageUrl = null;
@@ -687,21 +717,7 @@ export const api = {
         image_url: imageUrl,
         video_url: videoUrl,
       });
-      const m = res.data;
-      return {
-        id: m.id.toString(),
-        content: m.content,
-        imageUrl: isImageMedia(m.image_url) ? getFullUrl(m.image_url) : null,
-        videoUrl: getFullUrl(m.video_url) || (isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null),
-        fileUrl: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null,
-        fileName: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? m.image_url.split('/').pop() : null,
-        senderId: m.sender_id,
-        timestamp: new Date(m.created_at).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        isRead: m.is_read,
-      };
+      return transformMessage(res.data);
     },
     createConversation: async (participantIds: string[], name?: string) => {
       const currentUserId = authStorage.getItem('user_id');
@@ -772,8 +788,13 @@ export const api = {
       return res.data;
     },
     getAll: async () => {
-      const res = await apiClient.get('/reports/');
-      return res.data;
+      try {
+        const res = await apiClient.get('/reports/');
+        return res.data.map(normalizeReport);
+      } catch (error) {
+        if (isNotFound(error)) return [];
+        throw error;
+      }
     },
     resolve: async (id: number, status: string) => {
       const res = await apiClient.post(`/reports/${id}/resolve?status=${status}`);
@@ -789,22 +810,32 @@ export const api = {
         }
       } catch {}
 
-      const [users, posts] = await Promise.all([
+      const [users, posts, reports] = await Promise.all([
         api.profiles.getSuggestions().catch(() => []),
         apiClient.get('/posts/?skip=0&limit=200').then((res) => res.data).catch(() => []),
+        api.reports.getAll().catch(() => []),
       ]);
       return {
         total_users: users.length,
         total_posts: posts.length,
         total_groups: 0,
-        pending_reports: 0,
+        pending_reports: reports.filter((report: any) => report.status === 'pending').length,
       };
     },
     getUsers: async () => {
-      const res = await apiClient.get('/admin/users');
-      const users = res.data.map(transformUser);
-      if (users.length > 0) return users;
-      return api.profiles.getSuggestions();
+      try {
+        const res = await apiClient.get('/admin/users?limit=1000');
+        const users = res.data.map(transformUser);
+        if (users.length > 0) return users;
+      } catch {}
+
+      const [suggestions, searchUsers] = await Promise.all([
+        api.profiles.getSuggestions().catch(() => []),
+        apiClient.get('/search/users?q=').then((res) => res.data.map(transformUser)).catch(() => []),
+      ]);
+      const byId = new Map<string, any>();
+      [...suggestions, ...searchUsers].forEach((u: any) => byId.set(String(u.id), u));
+      return Array.from(byId.values());
     },
     updateRole: async (userId: string, role: string) => {
       const res = await apiClient.put(`/admin/users/${userId}/role?role=${role}`);

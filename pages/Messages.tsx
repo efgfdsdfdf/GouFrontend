@@ -41,6 +41,7 @@ export const Messages = () => {
   const [isAttachMenuOpen, setIsAttachMenuOpen] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [pendingChat, setPendingChat] = useState<any | null>(null);
+  const [chatPrepareError, setChatPrepareError] = useState<string | null>(null);
   const [contactEmails, setContactEmails] = useState<Set<string>>(new Set());
   const [contactNames, setContactNames] = useState<Set<string>>(new Set());
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia("(min-width: 768px)").matches);
@@ -61,6 +62,9 @@ export const Messages = () => {
 
   const createChatMutation = useMutation({
     mutationFn: (participantId: string) => api.chats.createConversation([participantId]),
+    onMutate: () => {
+      setChatPrepareError(null);
+    },
     onSuccess: (newChat) => {
       const normalizedChat = {
         id: newChat.id.toString(),
@@ -84,7 +88,15 @@ export const Messages = () => {
       setSearchParams({}, { replace: true });
     },
     onError: () => {
-      setPendingChat(null);
+      setChatPrepareError("Unable to prepare this chat. Follow the user and try again.");
+      setPendingChat((current: any) =>
+        current
+          ? {
+              ...current,
+              lastMessage: "Unable to prepare chat",
+            }
+          : current,
+      );
     },
   });
 
@@ -172,7 +184,8 @@ export const Messages = () => {
 
   const selectedChat = chats.find((chat: any) => chat.id === selectedChatId);
   const activeChat = selectedChat || (pendingChat?.id === selectedChatId ? pendingChat : null);
-  const isChatPreparing = Boolean(selectedChatId?.startsWith("temp-"));
+  const isTempChat = Boolean(selectedChatId?.startsWith("temp-"));
+  const isChatPreparing = isTempChat && createChatMutation.isPending && !chatPrepareError;
   const filteredChats = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     if (!q) return chats;
@@ -294,6 +307,8 @@ export const Messages = () => {
         fileName: file && !file.type.startsWith("image/") && !file.type.startsWith("video/") ? file.name : null,
         senderId: currentUserId,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        dateLabel: new Date().toLocaleDateString([], { month: "short", day: "numeric" }),
+        fullTimestamp: new Date().toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
         isRead: false,
       };
 
@@ -331,7 +346,7 @@ export const Messages = () => {
   });
 
   const handleSend = () => {
-    if ((!messageText.trim() && !attachment) || !selectedChatId || isChatPreparing) return;
+    if ((!messageText.trim() && !attachment) || !selectedChatId || isTempChat) return;
     sendMessageMutation.mutate({
       chatId: selectedChatId,
       content: messageText.trim(),
@@ -486,7 +501,7 @@ export const Messages = () => {
 
               <div className="relative flex-1 overflow-y-auto px-3 md:px-10 py-6">
                 <div className="absolute inset-0 opacity-60 pointer-events-none bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.05),transparent_25%),radial-gradient(circle_at_85%_30%,rgba(196,255,14,0.04),transparent_22%)]" />
-                <div className="relative space-y-2">
+                <div className="relative space-y-5 pb-4">
                   {(messagesLoading || isChatPreparing) ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="flex items-center gap-1.5">
@@ -495,48 +510,77 @@ export const Messages = () => {
                         <span className="h-2 w-2 rounded-full bg-white/30 animate-bounce" />
                       </div>
                     </div>
+                  ) : chatPrepareError ? (
+                    <div className="flex min-h-[50vh] items-center justify-center px-4 text-center">
+                      <div className="max-w-sm rounded-3xl border border-white/10 bg-white/[0.04] p-6">
+                        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-black font-black">
+                          G
+                        </div>
+                        <p className="text-sm font-semibold text-white">{chatPrepareError}</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (activeChat?.partner?.id) createChatMutation.mutate(activeChat.partner.id);
+                          }}
+                          className="mt-5 rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-black"
+                        >
+                          Try again
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <AnimatePresence mode="popLayout">
-                      {messages.map((msg: any) => {
+                      {messages.map((msg: any, index: number) => {
                         const mine = String(msg.senderId) === String(currentUserId);
+                        const showDate = index === 0 || msg.dateLabel !== messages[index - 1]?.dateLabel;
                         return (
-                          <motion.div
-                            key={msg.id}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-md border ${
-                                mine ? "bg-primary text-black border-primary/50" : "bg-white/[0.08] text-white border-white/10"
-                              }`}
+                          <React.Fragment key={msg.id}>
+                            {showDate && (
+                              <div className="sticky top-2 z-10 my-3 flex justify-center">
+                                <span className="rounded-full border border-white/10 bg-black/60 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/45 backdrop-blur">
+                                  {msg.dateLabel}
+                                </span>
+                              </div>
+                            )}
+                            <motion.div
+                              initial={{ opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className={`flex ${mine ? "justify-end" : "justify-start"}`}
                             >
-                              {msg.imageUrl && (
-                                <img src={msg.imageUrl} className="max-h-80 rounded-md mb-1 object-cover" alt="" />
-                              )}
-                              {msg.videoUrl && (
-                                <video src={msg.videoUrl} controls className="max-h-80 rounded-md mb-1" />
-                              )}
-                              {msg.fileUrl && (
-                                <a
-                                  href={msg.fileUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className={`mb-1 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
-                                    mine ? "border-black/20 bg-black/10 text-black" : "border-white/10 bg-white/5 text-white"
+                              <div className={`flex max-w-[82%] flex-col gap-1 sm:max-w-[70%] ${mine ? "items-end" : "items-start"}`}>
+                                <div
+                                  className={`rounded-2xl px-3 py-2 shadow-md border ${
+                                    mine ? "bg-primary text-black border-primary/50" : "bg-white/[0.08] text-white border-white/10"
                                   }`}
                                 >
-                                  <FileText size={18} />
-                                  <span className="truncate">{msg.fileName || "Open attachment"}</span>
-                                </a>
-                              )}
-                              {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
-                              <div className="flex items-center justify-end gap-1 pl-10 mt-0.5">
-                                <span className={`text-[10px] ${mine ? "text-black/55" : "text-white/45"}`}>{msg.timestamp}</span>
-                                {mine && <CheckCheck size={14} className={msg.isRead ? "text-black" : "text-black/55"} />}
+                                  {msg.imageUrl && (
+                                    <img src={msg.imageUrl} className="max-h-80 rounded-md mb-1 object-cover" alt="" />
+                                  )}
+                                  {msg.videoUrl && (
+                                    <video src={msg.videoUrl} controls className="max-h-80 rounded-md mb-1" />
+                                  )}
+                                  {msg.fileUrl && (
+                                    <a
+                                      href={msg.fileUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className={`mb-1 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                                        mine ? "border-black/20 bg-black/10 text-black" : "border-white/10 bg-white/5 text-white"
+                                      }`}
+                                    >
+                                      <FileText size={18} />
+                                      <span className="truncate">{msg.fileName || "Open attachment"}</span>
+                                    </a>
+                                  )}
+                                  {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
+                                </div>
+                                <div className={`flex items-center gap-1 px-2 text-[10px] ${mine ? "text-white/35" : "text-white/40"}`}>
+                                  <span>{msg.fullTimestamp || msg.timestamp}</span>
+                                  {mine && <CheckCheck size={14} className={msg.isRead ? "text-white/60" : "text-white/35"} />}
+                                </div>
                               </div>
-                            </div>
-                          </motion.div>
+                            </motion.div>
+                          </React.Fragment>
                         );
                       })}
                     </AnimatePresence>
@@ -629,12 +673,12 @@ export const Messages = () => {
                     onChange={(e) => setMessageText(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder={isChatPreparing ? "Preparing chat..." : "Type a message"}
-                    disabled={isChatPreparing}
+                    disabled={isTempChat}
                     className="h-11 min-w-0 flex-1 rounded-xl bg-white/5 border border-white/10 px-4 text-[15px] text-white placeholder:text-white/35 outline-none focus:border-primary/40"
                   />
                   <button
                     onClick={handleSend}
-                    disabled={isChatPreparing || sendMessageMutation.isPending || (!messageText.trim() && !attachment)}
+                    disabled={isTempChat || sendMessageMutation.isPending || (!messageText.trim() && !attachment)}
                     className="h-11 w-11 rounded-xl bg-primary text-black flex items-center justify-center disabled:opacity-40 shrink-0"
                   >
                     <Send size={19} />

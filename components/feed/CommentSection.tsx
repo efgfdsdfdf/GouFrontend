@@ -21,7 +21,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
-  const { data: comments, isLoading } = useQuery({
+  const { data: comments, isLoading, isError } = useQuery({
     queryKey: ["comments", postId],
     queryFn: () => api.posts.getComments(postId),
   });
@@ -154,10 +154,20 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   };
 
   return (
-    <div className="mt-4 flex h-full min-h-0 flex-col border-t border-white/5 pt-4">
+    <div className="mt-4 flex h-full min-h-0 flex-col border-t border-white/5 pb-24 pt-4 md:pb-4">
       <div className="flex-1 min-h-0 space-y-5 overflow-y-auto pb-4 pr-1">
         {isLoading ? (
-          <div className="h-12" />
+          <div className="flex min-h-32 items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 font-serif text-3xl font-black text-white/25 animate-pulse">
+              G
+            </div>
+          </div>
+        ) : isError ? (
+          <div className="flex min-h-32 items-center justify-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5 font-serif text-3xl font-black text-white/25">
+              G
+            </div>
+          </div>
         ) : (
           (() => {
             // Heuristic grouping: comments starting with @ are replies
@@ -199,7 +209,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         <div className="h-4" />
       </div>
 
-      <div className="sticky bottom-0 mt-3 space-y-2 border-t border-white/5 bg-[#111113] pt-3">
+      <div className="sticky bottom-20 mt-3 space-y-2 border-t border-white/5 bg-[#111113] pt-3 md:bottom-0">
         {replyTarget && (
           <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-white">
             <div className="flex min-w-0 items-center gap-2">
