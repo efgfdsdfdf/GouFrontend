@@ -724,7 +724,7 @@ export const api = {
     createConversation: async (participantIds: string[], name?: string) => {
       const currentUserId = authStorage.getItem('user_id');
       const participant_ids = Array.from(
-        new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(String)),
+        new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(Number)),
       );
       const res = await apiClient.post('/conversations/', { participant_ids, name });
       return transformConversation(res.data);
@@ -826,7 +826,7 @@ export const api = {
     },
     getUsers: async () => {
       try {
-        const res = await apiClient.get('/admin/users?limit=1000');
+        const res = await apiClient.get('/users/?skip=0&limit=10000');
         const users = res.data.map(transformUser);
         if (users.length > 0) return users;
       } catch {}
