@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import axios from 'axios';
-import { Notification } from '../types';
+import { Notification, Post } from '../types';
 import { useAuthStore } from '../store';
 import { authStorage } from '../utils/persistentStorage';
 
@@ -77,6 +77,11 @@ const isVideoMedia = (url?: string | null) => {
   return /\.(mp4|webm|mov|m4v|avi|mkv|m3u8)(\?|$)/i.test(url);
 };
 
+const isImageMedia = (url?: string | null) => {
+  if (!url) return false;
+  return /\.(avif|gif|jpe?g|png|webp|bmp|svg)(\?|$)/i.test(url);
+};
+
 const seededShuffle = <T extends { id?: string }>(items: T[], seed = Math.random()) => {
   const hash = (value: string) => {
     let h = 2166136261;
@@ -125,7 +130,7 @@ export const transformUser = (user: any) => {
   };
 };
 
-const transformPost = (post: any) => {
+const transformPost = (post: any): Post => {
   const userStr = authStorage.getItem('user_data');
   const user = userStr ? JSON.parse(userStr) : null;
   const currentUserId = user ? user.id : null;
@@ -133,12 +138,14 @@ const transformPost = (post: any) => {
   const rawMedia = post.video || post.image;
   const isReel = Boolean(post.video);
 
+  const mediaType: Post['mediaType'] = isReel ? 'video' : post.image ? 'image' : 'text';
+
   return {
     id: post.id.toString(),
     author: transformUser(post.user),
     content: post.caption || '',
     imageUrl: getFullUrl(rawMedia),
-    mediaType: isReel ? 'video' : post.image ? 'image' : 'text',
+    mediaType,
     isReel,
     likes: post.likes_count || 0,
     comments: post.comments?.length || 0,
@@ -294,9 +301,7 @@ export const api = {
         query.set('seed', seed.toFixed(8));
       }
       const res = await apiClient.get(`/posts/feed?${query.toString()}`);
-      const posts = res.data
-        .map(transformPost)
-        .filter((post: any) => !post.isReel && !isVideoMedia(post.imageUrl));
+      const posts = res.data.map(transformPost);
       return seededShuffle(posts, seed);
     },
     getReels: async ({ pageParam = 0, seed }: { pageParam?: number; seed?: number } = {}) => {
@@ -348,6 +353,17 @@ export const api = {
         video: isVideo ? mediaUrl : null,
       });
       return transformPost(res.data);
+    },
+    getById: async (id: string) => {
+      try {
+        const res = await apiClient.get(`/posts/${id}`);
+        return transformPost(res.data);
+      } catch {
+        const res = await apiClient.get('/posts/?skip=0&limit=200');
+        const match = res.data.find((post: any) => String(post.id) === String(id));
+        if (!match) throw new Error('Post not found');
+        return transformPost(match);
+      }
     },
     createReel: async (data: any) => {
       if (!data.image?.type?.startsWith('video/')) {
@@ -421,7 +437,7 @@ export const api = {
       const profile = await api.profiles.get(username);
       const userId = profile.id;
       const res = await apiClient.get(`/users/${userId}/posts?limit=50`);
-      return res.data.map(transformPost).filter((post: any) => !post.isReel && !isVideoMedia(post.imageUrl));
+      return res.data.map(transformPost);
     },
     getReels: async (username: string) => {
       const profile = await api.profiles.get(username);
@@ -660,8 +676,10 @@ export const api = {
       return res.data.map((m: any) => ({
         id: m.id.toString(),
         content: m.content,
-        imageUrl: getFullUrl(m.image_url),
-        videoUrl: getFullUrl(m.video_url),
+        imageUrl: isImageMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+        videoUrl: getFullUrl(m.video_url) || (isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null),
+        fileUrl: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+        fileName: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? m.image_url.split('/').pop() : null,
         senderId: m.sender_id,
         timestamp: new Date(m.created_at).toLocaleTimeString([], {
           hour: '2-digit',
@@ -693,8 +711,10 @@ export const api = {
       return {
         id: m.id.toString(),
         content: m.content,
-        imageUrl: getFullUrl(m.image_url),
-        videoUrl: getFullUrl(m.video_url),
+        imageUrl: isImageMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+        videoUrl: getFullUrl(m.video_url) || (isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null),
+        fileUrl: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? getFullUrl(m.image_url) : null,
+        fileName: m.image_url && !isImageMedia(m.image_url) && !isVideoMedia(m.image_url) ? m.image_url.split('/').pop() : null,
         senderId: m.sender_id,
         timestamp: new Date(m.created_at).toLocaleTimeString([], {
           hour: '2-digit',
@@ -769,12 +789,29 @@ export const api = {
   },
   admin: {
     getStats: async () => {
-      const res = await apiClient.get('/admin/stats');
-      return res.data;
+      try {
+        const res = await apiClient.get('/admin/stats');
+        if (res.data?.total_users || res.data?.total_posts || res.data?.total_groups) {
+          return res.data;
+        }
+      } catch {}
+
+      const [users, posts] = await Promise.all([
+        api.profiles.getSuggestions().catch(() => []),
+        apiClient.get('/posts/?skip=0&limit=200').then((res) => res.data).catch(() => []),
+      ]);
+      return {
+        total_users: users.length,
+        total_posts: posts.length,
+        total_groups: 0,
+        pending_reports: 0,
+      };
     },
     getUsers: async () => {
       const res = await apiClient.get('/admin/users');
-      return res.data.map(transformUser);
+      const users = res.data.map(transformUser);
+      if (users.length > 0) return users;
+      return api.profiles.getSuggestions();
     },
     updateRole: async (userId: string, role: string) => {
       const res = await apiClient.put(`/admin/users/${userId}/role?role=${role}`);

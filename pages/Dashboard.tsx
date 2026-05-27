@@ -1,55 +1,15 @@
-import React, { useEffect, useRef, useState, TouchEvent } from "react";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw } from "lucide-react";
+import React, { useEffect, useRef } from "react";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { PostCard } from "../components/feed/PostCard";
 import { StatusCircles } from "../components/feed/StatusCircles";
-import { Skeleton } from "../components/ui/Skeleton";
 import { api } from "../services/api";
 import { Post } from "../types";
 
 export const Dashboard = () => {
   const queryClient = useQueryClient();
-  const [feedSeed, setFeedSeed] = useState(() => Math.random());
-  
-  const [pullY, setPullY] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const touchStartY = useRef(0);
-
-  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
-    if (window.scrollY === 0) {
-      touchStartY.current = e.touches[0].clientY;
-    }
-  };
-
-  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
-    if (window.scrollY === 0 && touchStartY.current > 0) {
-      const y = e.touches[0].clientY - touchStartY.current;
-      if (y > 0) {
-        setPullY(y);
-      }
-    }
-  };
-
-  const handleTouchEnd = async () => {
-    if (pullY > 140) {
-      setIsRefreshing(true);
-      setFeedSeed(Math.random());
-      await queryClient.invalidateQueries({ queryKey: ["feed"] });
-      setTimeout(() => {
-        setIsRefreshing(false);
-        setPullY(0);
-      }, 1000);
-    } else {
-      setPullY(0);
-    }
-    touchStartY.current = 0;
-  };
 
   const refreshFeed = async () => {
-    setIsRefreshing(true);
-    setFeedSeed(Math.random());
     await queryClient.invalidateQueries({ queryKey: ["feed"] });
-    setTimeout(() => setIsRefreshing(false), 600);
   };
 
   useEffect(() => {
@@ -62,19 +22,13 @@ export const Dashboard = () => {
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteQuery({
-      queryKey: ["feed", feedSeed],
-      queryFn: ({ pageParam }) => api.posts.getFeed({ pageParam, seed: feedSeed }),
+      queryKey: ["feed"],
+      queryFn: ({ pageParam }) => api.posts.getFeed({ pageParam }),
       initialPageParam: 0,
       getNextPageParam: (lastPage, allPages) => {
         return lastPage.length > 0 ? allPages.length : undefined;
       },
     });
-
-  const { data: suggestions } = useQuery({
-    queryKey: ["suggestions"],
-    queryFn: api.profiles.getSuggestions,
-    staleTime: 1000 * 60 * 5,
-  });
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -103,40 +57,16 @@ export const Dashboard = () => {
   const uniquePosts = Array.from(
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
   );
-  const posts = uniquePosts.filter((post) => !post.isReel);
+  const posts = uniquePosts;
 
   return (
-    <div 
-      className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div 
-        className="flex items-center justify-center overflow-hidden transition-all duration-300"
-        style={{ height: pullY > 0 || isRefreshing ? `${Math.min(pullY, 80)}px` : '0px' }}
-      >
-        <RefreshCw 
-          className={`text-primary ${isRefreshing ? 'animate-spin' : ''}`} 
-          size={24} 
-          style={!isRefreshing ? { transform: `rotate(${pullY * 3}deg)` } : {}}
-        />
-      </div>
+    <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4">
       {/* Stories Section */}
       <div className="mb-2">
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4">
           <h2 className="font-serif text-3xl text-white">Campus stories</h2>
-          <button
-            type="button"
-            onClick={refreshFeed}
-            className="hidden md:flex h-10 w-10 rounded-full bg-white/5 border border-white/10 text-white/70 items-center justify-center hover:bg-white/10 hover:text-white transition-all active:scale-95"
-            aria-label="Refresh feed"
-            title="Refresh feed"
-          >
-            <RefreshCw size={17} />
-          </button>
         </div>
-        <StatusCircles users={suggestions || []} />
+        <StatusCircles />
       </div>
 
       <div className="space-y-6">

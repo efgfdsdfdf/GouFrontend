@@ -54,7 +54,7 @@ export const Discover = () => {
     mutationFn: (postId: string) => api.posts.like(postId),
     onMutate: async (postId) => {
       await queryClient.cancelQueries({ queryKey: ["discover-reels"] });
-      const previousReels = queryClient.getQueryData(["discover-reels"]);
+      const previousReels = queryClient.getQueriesData({ queryKey: ["discover-reels"] });
 
       queryClient.setQueryData(["discover-reels", discoverSeed], (old: any) => {
         if (!old?.pages) return old;
@@ -64,8 +64,8 @@ export const Discover = () => {
             if (p.id === postId) {
               return {
                 ...p,
-                isLiked: true,
-                likes: p.isLiked ? p.likes : p.likes + 1
+                isLiked: !p.isLiked,
+                likes: Math.max(0, p.likes + (p.isLiked ? -1 : 1))
               };
             }
             return p;
@@ -75,7 +75,9 @@ export const Discover = () => {
       return { previousReels };
     },
     onError: (err, variables, context) => {
-      queryClient.setQueryData(["discover-reels"], context?.previousReels);
+      context?.previousReels?.forEach(([key, value]: any) => {
+        queryClient.setQueryData(key, value);
+      });
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
@@ -85,7 +87,7 @@ export const Discover = () => {
   const deleteMutation = useMutation({
     mutationFn: (postId: string) => api.posts.delete(postId),
     onSuccess: (_, postId) => {
-      queryClient.setQueryData(["discover-reels", discoverSeed], (old: any) => {
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
@@ -93,6 +95,8 @@ export const Discover = () => {
         };
       });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["post", postId] });
     },
   });
 
@@ -167,7 +171,7 @@ export const Discover = () => {
 
   const reels = Array.from(
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
-  ).filter((post: Post) => isVideoUrl(post.imageUrl));
+  ).filter((post: Post) => post.isReel || post.mediaType === "video" || isVideoUrl(post.imageUrl));
 
   if (status === "pending") {
     return (
@@ -193,12 +197,13 @@ export const Discover = () => {
             <p className="text-zinc-500 max-w-xs mb-10 text-sm leading-relaxed">
               Be the first to share a moment with the campus community!
             </p>
-            <Link
-              to="/profile"
+            <button
+              type="button"
+              onClick={() => setIsCreateReelOpen(true)}
               className="px-10 py-4 bg-primary text-black rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/20"
             >
-              Go to Profile to Create Reels
-            </Link>
+              Create Reel
+            </button>
           </div>
         ) : (
           reels.map((reel) => (

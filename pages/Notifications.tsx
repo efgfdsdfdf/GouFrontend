@@ -36,12 +36,6 @@ export const Notifications = () => {
     queryFn: api.notifications.getAll,
   });
 
-  const { data: suggestions } = useQuery({
-    queryKey: ["suggestions"],
-    queryFn: api.profiles.getSuggestions,
-    staleTime: 1000 * 60 * 5,
-  });
-
   const markReadMutation = useMutation({
     mutationFn: api.notifications.markRead,
     onMutate: async () => {
@@ -72,7 +66,7 @@ export const Notifications = () => {
   return (
     <div className="max-w-3xl mx-auto w-full pb-24 pt-8">
       <div className="mb-4">
-        <StatusCircles users={suggestions || []} />
+        <StatusCircles />
       </div>
       <div className="mb-8 relative p-8 rounded-[2rem] glass-panel overflow-hidden border border-white/5 shadow-2xl flex items-center gap-4">
         <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">

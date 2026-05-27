@@ -20,6 +20,7 @@ import { ResetPassword } from "./pages/ResetPassword";
 import { Groups } from "./pages/Groups";
 import { Messages } from "./pages/Messages";
 import { Profile } from "./pages/Profile";
+import { PostDetail } from "./pages/PostDetail";
 import { Alumni } from "./pages/Alumni";
 import { GroupDetails } from "./pages/GroupDetails";
 import { AdminPanel } from "./pages/AdminPanel";
@@ -250,7 +251,8 @@ const useNotificationPopups = () => {
           icon: '/pwa-192x192.png',
           badge: '/pwa-192x192.png',
           tag: `gounion-${Date.now()}`,
-          vibrate: [200, 100, 200],
+          // Some DOM lib versions omit the Notification vibration option.
+          ...( { vibrate: [200, 100, 200] } as Record<string, unknown> ),
         });
         n.onclick = () => {
           window.focus();
@@ -468,6 +470,14 @@ const AppRoutes = () => {
           element={
             <PrivateRoute>
               <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/post/:id"
+          element={
+            <PrivateRoute>
+              <PostDetail />
             </PrivateRoute>
           }
         />

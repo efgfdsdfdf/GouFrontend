@@ -28,7 +28,7 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
     mutationFn: api.stories.create,
     onSuccess: (status) => {
       onSuccess(status);
-      queryClient.invalidateQueries({ queryKey: ["stories"] });
+      queryClient.invalidateQueries({ queryKey: ["stories-feed"] });
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       setContent("");
       setImage(null);

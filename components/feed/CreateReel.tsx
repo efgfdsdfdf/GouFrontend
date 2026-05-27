@@ -27,7 +27,14 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
 
   const mutation = useMutation({
     mutationFn: (data: { caption: string; image?: File | null }) => api.posts.createReel(data),
-    onSuccess: () => {
+    onSuccess: (createdReel) => {
+      queryClient.setQueriesData({ queryKey: ["discover-reels"] }, (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: [[createdReel], ...old.pages.map((page: any[]) => page.filter((post) => post.id !== createdReel.id))],
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["discover-reels"] });
       handleRemoveFile();
       setCaption("");

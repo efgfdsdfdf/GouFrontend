@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Camera,
   CheckCheck,
   Image as ImageIcon,
+  FileText,
   MessageSquarePlus,
   MoreVertical,
   Paperclip,
@@ -21,6 +22,7 @@ import { authStorage } from "../utils/persistentStorage";
 
 export const Messages = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const currentUserId = authStorage.getItem("user_id");
   const [searchParams, setSearchParams] = useSearchParams();
   const userIdFromQuery = searchParams.get("userId");
@@ -210,8 +212,10 @@ export const Messages = () => {
       const optimisticMessage = {
         id: `temp-${Date.now()}`,
         content,
-        imageUrl: file && !file.type.startsWith("video/") ? previewUrl : null,
+        imageUrl: file && file.type.startsWith("image/") ? previewUrl : null,
         videoUrl: file && file.type.startsWith("video/") ? previewUrl : null,
+        fileUrl: file && !file.type.startsWith("image/") && !file.type.startsWith("video/") ? previewUrl : null,
+        fileName: file && !file.type.startsWith("image/") && !file.type.startsWith("video/") ? file.name : null,
         senderId: currentUserId,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         isRead: false,
@@ -275,6 +279,14 @@ export const Messages = () => {
           }`}
         >
           <div className="h-16 px-4 bg-[#0a0a0c]/95 border-b border-white/5 flex items-center justify-between">
+            <button
+              onClick={() => navigate("/")}
+              className="h-10 w-10 rounded-xl text-white/55 hover:text-white hover:bg-white/5 flex items-center justify-center shrink-0"
+              aria-label="Back to feed"
+              title="Back"
+            >
+              <ArrowLeft size={21} />
+            </button>
             <Link to="/" className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 rounded-xl bg-primary text-black flex items-center justify-center font-black shadow-lg shadow-primary/20">
                 G
@@ -432,6 +444,19 @@ export const Messages = () => {
                               {msg.videoUrl && (
                                 <video src={msg.videoUrl} controls className="max-h-80 rounded-md mb-1" />
                               )}
+                              {msg.fileUrl && (
+                                <a
+                                  href={msg.fileUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={`mb-1 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                                    mine ? "border-black/20 bg-black/10 text-black" : "border-white/10 bg-white/5 text-white"
+                                  }`}
+                                >
+                                  <FileText size={18} />
+                                  <span className="truncate">{msg.fileName || "Open attachment"}</span>
+                                </a>
+                              )}
                               {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
                               <div className="flex items-center justify-end gap-1 pl-10 mt-0.5">
                                 <span className={`text-[10px] ${mine ? "text-black/55" : "text-white/45"}`}>{msg.timestamp}</span>
@@ -452,8 +477,13 @@ export const Messages = () => {
                   <div className="mx-2 mb-2 w-fit relative">
                     {attachment?.type.startsWith("video/") ? (
                       <video src={attachmentPreview} className="h-28 rounded-lg border border-white/10" />
-                    ) : (
+                    ) : attachment?.type.startsWith("image/") ? (
                       <img src={attachmentPreview} className="h-28 rounded-lg border border-white/10 object-cover" alt="" />
+                    ) : (
+                      <div className="h-20 max-w-[220px] rounded-lg border border-white/10 bg-white/5 px-4 flex items-center gap-3 text-white/80">
+                        <FileText size={22} />
+                        <span className="text-sm truncate">{attachment?.name}</span>
+                      </div>
                     )}
                     <button
                       onClick={clearAttachment}
@@ -510,7 +540,7 @@ export const Messages = () => {
                     type="file"
                     className="hidden"
                     onChange={handleFileSelect}
-                    accept="image/*,video/*,application/pdf"
+                    accept="image/*,video/*,application/pdf,.doc,.docx,.txt,.zip"
                   />
                   <input
                     ref={cameraInputRef}

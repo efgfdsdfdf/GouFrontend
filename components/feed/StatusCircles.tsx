@@ -48,7 +48,7 @@ export const StatusCircles = () => {
     <div className="flex gap-4 overflow-x-auto hide-scrollbar -mx-4 px-4 mb-4">
       {/* Your Story */}
       <div className="flex flex-col items-center gap-2 group cursor-pointer shrink-0">
-        <div 
+        <div
           onClick={() => myStories.length > 0 ? openViewer({ stories: myStories, user }) : setIsModalOpen(true)}
           className={`relative w-16 h-16 rounded-full p-[2px] transition-all duration-300 group-hover:scale-105 ${myStories.length > 0 ? 'story-ring' : 'bg-white/10'}`}
         >
@@ -67,6 +67,19 @@ export const StatusCircles = () => {
               <Plus className="absolute w-6 h-6 text-white/40 group-hover:text-white transition-colors" />
             )}
           </div>
+          {myStories.length > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsModalOpen(true);
+              }}
+              className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-primary text-black border-2 border-[#030303] flex items-center justify-center shadow-lg"
+              aria-label="Add another story"
+            >
+              <Plus size={14} strokeWidth={3} />
+            </button>
+          )}
         </div>
         <span className="text-xs text-white/50">{myStories.length > 0 ? "Your story" : "Add story"}</span>
       </div>

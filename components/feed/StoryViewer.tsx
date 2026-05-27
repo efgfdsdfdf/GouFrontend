@@ -19,6 +19,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [storyOverrides, setStoryOverrides] = useState<Record<string, any>>({});
   const queryClient = useQueryClient();
 
   const viewMutation = useMutation({
@@ -30,7 +31,26 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
   const likeMutation = useMutation({
     mutationFn: (id: string) => api.stories.like(id),
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["stories-feed"] });
+      const previousStories = queryClient.getQueryData(["stories-feed"]);
+      queryClient.setQueryData(["stories-feed"], (old: any[] = []) =>
+        old.map((story) =>
+          story.id === id
+            ? {
+                ...story,
+                isLiked: !story.isLiked,
+                likesCount: Math.max(0, (story.likesCount || 0) + (story.isLiked ? -1 : 1)),
+              }
+            : story,
+        ),
+      );
+      return { previousStories };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(["stories-feed"], context?.previousStories);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["stories-feed"] });
     },
   });
@@ -87,10 +107,22 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     content: "No content",
     user: currentUser,
   };
+  const currentStoryOverride = currentStory.id ? storyOverrides[currentStory.id] : null;
+  const displayStory = currentStoryOverride ? { ...currentStory, ...currentStoryOverride } : currentStory;
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (currentStory.id) {
+      setStoryOverrides((prev) => {
+        const story = { ...currentStory, ...prev[currentStory.id] };
+        return {
+          ...prev,
+          [currentStory.id]: {
+            isLiked: !story.isLiked,
+            likesCount: Math.max(0, (story.likesCount || 0) + (story.isLiked ? -1 : 1)),
+          },
+        };
+      });
       likeMutation.mutate(currentStory.id);
     }
   };
@@ -99,7 +131,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
     e.stopPropagation();
     if (!currentStory?.id) return;
     const url = `${window.location.origin}/post/${currentStory.id}`;
-    const text = currentStory.content || `Check out this story from @${currentStory.user?.username}`;
+    const text = displayStory.content || `Check out this story from @${displayStory.user?.username}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: "GoUnion Story", text, url });
@@ -146,16 +178,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
             <div className="absolute top-8 left-6 right-6 flex items-center justify-between z-20">
               <div className="flex items-center gap-3">
                 <img
-                  src={currentStory.user?.avatarUrl}
+                  src={displayStory.user?.avatarUrl}
                   className="w-10 h-10 rounded-full border-2 border-primary"
                   alt="Avatar"
                 />
                 <div>
                   <p className="text-white font-black text-sm uppercase tracking-widest">
-                    {currentStory.user?.username}
+                    {displayStory.user?.username}
                   </p>
                   <p className="text-zinc-400 text-[10px] font-bold uppercase">
-                    {currentStory.timestamp || "Just now"}
+                    {displayStory.timestamp || "Just now"}
                   </p>
                 </div>
               </div>
@@ -169,16 +201,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
 
             {/* Content Container */}
             <div className="flex-1 relative flex items-center justify-center">
-              {currentStory.imageUrl ? (
+              {displayStory.imageUrl ? (
                 <img
-                  src={currentStory.imageUrl}
+                  src={displayStory.imageUrl}
                   className="w-full h-full object-cover"
                   alt="Story"
                 />
               ) : (
                 <div className="p-12 text-center">
                   <h2 className="text-2xl md:text-4xl font-black text-white leading-tight tracking-tighter">
-                    {currentStory.content}
+                    {displayStory.content}
                   </h2>
                 </div>
               )}
@@ -219,14 +251,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                 <div className="flex items-center gap-1.5">
                   <Eye size={16} className="text-zinc-400" />
                   <span className="text-white text-xs font-bold">
-                    {currentStory.viewsCount || 0}
+                    {displayStory.viewsCount || 0}
                   </span>
                 </div>
                 <div className="w-[1px] h-3 bg-white/20" />
                 <div className="flex items-center gap-1.5">
                   <Heart size={16} className="text-zinc-400" />
                   <span className="text-white text-xs font-bold">
-                    {currentStory.likesCount || 0}
+                    {displayStory.likesCount || 0}
                   </span>
                 </div>
               </div>
@@ -243,14 +275,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({
                   whileTap={{ scale: 0.9 }}
                   onClick={handleLike}
                   className={`p-3 rounded-full border transition-all duration-300 ${
-                    currentStory.isLiked
+                    displayStory.isLiked
                       ? "bg-primary border-primary text-black shadow-[0_0_20px_rgba(196,255,14,0.4)]"
                       : "bg-white/10 border-white/10 text-white hover:bg-white/20"
                   }`}
                 >
                   <Heart
                     size={20}
-                    fill={currentStory.isLiked ? "currentColor" : "none"}
+                    fill={displayStory.isLiked ? "currentColor" : "none"}
                   />
                 </motion.button>
               </div>
