@@ -33,10 +33,6 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type.startsWith("video/")) {
-        alert("Videos belong in Discover reels. Feed posts accept text and photos only.");
-        return;
-      }
       setSelectedFile(file);
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
@@ -105,23 +101,15 @@ export const CreatePost = ({ profileUsername }: CreatePostProps) => {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept="image/*"
+                accept="image/*,video/*"
               />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                title="Photo"
+                title="Photo/Video"
               >
                 <ImageIcon className="w-5 h-5" />
-              </button>
-              {/* Video upload removed from Feed to keep Discover and Feed separate */}
-              <button
-                type="button"
-                className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors"
-                title="Attachment"
-              >
-                <Paperclip className="w-5 h-5" />
               </button>
             </div>
             <button

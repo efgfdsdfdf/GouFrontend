@@ -126,7 +126,7 @@ export const Messages = () => {
     setSearchParams,
   ]);
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ["messages", selectedChatId],
     queryFn: () => api.chats.getMessages(selectedChatId!),
     enabled: !!selectedChatId && !selectedChatId.startsWith("temp-"),
@@ -391,37 +391,45 @@ export const Messages = () => {
               <div className="relative flex-1 overflow-y-auto px-3 md:px-10 py-6">
                 <div className="absolute inset-0 opacity-60 pointer-events-none bg-[radial-gradient(circle_at_15%_20%,rgba(255,255,255,0.05),transparent_25%),radial-gradient(circle_at_85%_30%,rgba(196,255,14,0.04),transparent_22%)]" />
                 <div className="relative space-y-2">
-                  <AnimatePresence mode="popLayout">
-                    {messages.map((msg: any) => {
-                      const mine = String(msg.senderId) === String(currentUserId);
-                      return (
-                        <motion.div
-                          key={msg.id}
-                          initial={{ opacity: 0, y: 8 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex ${mine ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-md border ${
-                              mine ? "bg-primary text-black border-primary/50" : "bg-white/[0.08] text-white border-white/10"
-                            }`}
+                  {(messagesLoading || isChatPreparing) ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
+                        G
+                      </div>
+                    </div>
+                  ) : (
+                    <AnimatePresence mode="popLayout">
+                      {messages.map((msg: any) => {
+                        const mine = String(msg.senderId) === String(currentUserId);
+                        return (
+                          <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`flex ${mine ? "justify-end" : "justify-start"}`}
                           >
-                            {msg.imageUrl && (
-                              <img src={msg.imageUrl} className="max-h-80 rounded-md mb-1 object-cover" alt="" />
-                            )}
-                            {msg.videoUrl && (
-                              <video src={msg.videoUrl} controls className="max-h-80 rounded-md mb-1" />
-                            )}
-                            {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
-                            <div className="flex items-center justify-end gap-1 pl-10 mt-0.5">
-                              <span className={`text-[10px] ${mine ? "text-black/55" : "text-white/45"}`}>{msg.timestamp}</span>
-                              {mine && <CheckCheck size={14} className={msg.isRead ? "text-black" : "text-black/55"} />}
+                            <div
+                              className={`max-w-[82%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-md border ${
+                                mine ? "bg-primary text-black border-primary/50" : "bg-white/[0.08] text-white border-white/10"
+                              }`}
+                            >
+                              {msg.imageUrl && (
+                                <img src={msg.imageUrl} className="max-h-80 rounded-md mb-1 object-cover" alt="" />
+                              )}
+                              {msg.videoUrl && (
+                                <video src={msg.videoUrl} controls className="max-h-80 rounded-md mb-1" />
+                              )}
+                              {msg.content && <p className="px-1 pt-1 text-[14px] leading-relaxed whitespace-pre-wrap">{msg.content}</p>}
+                              <div className="flex items-center justify-end gap-1 pl-10 mt-0.5">
+                                <span className={`text-[10px] ${mine ? "text-black/55" : "text-white/45"}`}>{msg.timestamp}</span>
+                                {mine && <CheckCheck size={14} className={msg.isRead ? "text-black" : "text-black/55"} />}
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  )}
                   <div ref={bottomRef} />
                 </div>
               </div>

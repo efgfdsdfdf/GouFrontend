@@ -99,18 +99,33 @@ export const CreateStatusModal: React.FC<CreateStatusModalProps> = ({
                 />
 
                 <div className="flex items-center justify-between mt-4 relative z-10 pt-4 border-t border-white/5">
-                  <label className="flex items-center gap-2 text-zinc-500 hover:text-primary transition-colors cursor-pointer">
-                    <Camera size={20} />
-                    <span className="text-[10px] font-black uppercase tracking-widest">
-                      Capture Visual
-                    </span>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                    />
-                  </label>
+                  <div className="flex items-center gap-4 text-zinc-500">
+                    <label className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer">
+                      <Camera size={20} />
+                      <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Camera</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                    <label className="flex items-center gap-2 hover:text-primary transition-colors cursor-pointer">
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21 15 16 10 5 21"/>
+                      </svg>
+                      <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Gallery</span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                      />
+                    </label>
+                  </div>
 
                   <span
                     className={`text-[10px] font-black uppercase tracking-widest ${content.length > 100 ? "text-primary" : "text-zinc-600"}`}

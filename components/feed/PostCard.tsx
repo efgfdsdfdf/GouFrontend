@@ -7,6 +7,7 @@ import {
   Flag,
   Trash2,
   MoreHorizontal,
+  X,
 } from "lucide-react";
 import { Post } from "../../types";
 import { motion, AnimatePresence } from "framer-motion";
@@ -296,18 +297,39 @@ export const PostCard: React.FC<PostCardProps> = ({ post }) => {
 
         <AnimatePresence>
           {showComments && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-4 pt-4 border-t border-white/5"
-            >
-              <CommentSection
-                postId={post.id}
-                groupId={post.groupId}
-                authorUsername={post.author.username}
+            <div className="fixed inset-0 z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={() => setShowComments(false)}
               />
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: "100%" }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="relative w-full max-w-md bg-[#111113] rounded-t-[2.5rem] sm:rounded-3xl border border-white/10 shadow-2xl overflow-hidden h-[75vh] sm:h-[600px] flex flex-col"
+              >
+                <div className="p-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#111113] z-10">
+                  <h3 className="font-serif text-lg text-white">Comments</h3>
+                  <button 
+                    onClick={() => setShowComments(false)}
+                    className="p-2 bg-white/5 rounded-full text-white/50 hover:text-white transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+                  <CommentSection
+                    postId={post.id}
+                    groupId={post.groupId}
+                    authorUsername={post.author.username}
+                  />
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

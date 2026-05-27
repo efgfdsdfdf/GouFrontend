@@ -19,7 +19,8 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
   const [sound, setSound] = useState<File | null>(null);
   const [soundName, setSoundName] = useState<string>("");
   const [filter, setFilter] = useState<string>("none");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const soundInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -73,7 +74,8 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
     if (preview) URL.revokeObjectURL(preview);
     setVideo(null);
     setPreview(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (galleryInputRef.current) galleryInputRef.current.value = "";
   };
 
   const handleSubmit = () => {
@@ -109,17 +111,26 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
 
             <div className="p-6 space-y-6 overflow-y-auto hide-scrollbar flex-1">
               {!preview ? (
-                <div 
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-[9/16] w-full max-w-[240px] mx-auto bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/10 hover:border-primary/50 transition-all group"
-                >
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Video className="w-8 h-8 text-primary" />
+                <div className="flex flex-col gap-4 w-full max-w-[240px] mx-auto">
+                  <div 
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="aspect-square w-full bg-white/5 border-2 border-dashed border-white/10 rounded-[2rem] flex flex-col items-center justify-center gap-4 cursor-pointer hover:bg-white/10 hover:border-primary/50 transition-all group"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Video className="w-8 h-8 text-primary" />
+                    </div>
+                    <div className="text-center px-4">
+                      <p className="text-sm font-bold text-white">Open Camera</p>
+                      <p className="text-[10px] text-white/40 mt-1 uppercase tracking-widest font-black">Record Video</p>
+                    </div>
                   </div>
-                  <div className="text-center px-4">
-                    <p className="text-sm font-bold text-white">Select Video</p>
-                    <p className="text-[10px] text-white/40 mt-1 uppercase tracking-widest font-black">Up to 60s • MP4/MOV</p>
-                  </div>
+                  
+                  <button
+                    onClick={() => galleryInputRef.current?.click()}
+                    className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-xs font-bold text-white uppercase tracking-widest hover:bg-white/10 transition-colors"
+                  >
+                    Upload from Gallery
+                  </button>
                 </div>
               ) : (
                 <div className="relative aspect-[9/16] w-full max-w-[240px] mx-auto rounded-[2rem] overflow-hidden border border-white/10 bg-black shadow-2xl">
@@ -196,7 +207,15 @@ export const CreateReel: React.FC<CreateReelProps> = ({ isOpen, onClose }) => {
 
                 <input
                   type="file"
-                  ref={fileInputRef}
+                  ref={cameraInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="video/*"
+                  capture="environment"
+                />
+                <input
+                  type="file"
+                  ref={galleryInputRef}
                   onChange={handleFileChange}
                   className="hidden"
                   accept="video/*"

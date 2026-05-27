@@ -319,10 +319,6 @@ export const api = {
       return transformPost(res.data);
     },
     createFeedPost: async (data: any) => {
-      if (data.image?.type?.startsWith('video/')) {
-        throw new Error('Feed posts only accept text and photos. Use Discover for reels.');
-      }
-
       let mediaUrl = null;
       if (data.image) {
         const formData = new FormData();
@@ -331,10 +327,12 @@ export const api = {
         mediaUrl = uploadRes.data.url;
       }
 
+      const isVideo = data.image?.type?.startsWith('video/');
+
       const res = await apiClient.post('/posts/', {
         caption: data.caption,
-        image: mediaUrl,
-        video: null,
+        image: isVideo ? null : mediaUrl,
+        video: isVideo ? mediaUrl : null,
       });
       return transformPost(res.data);
     },
