@@ -41,7 +41,12 @@ export const StatusCircles = () => {
 
   const myStories = groupedStories[user?.id]?.stories || [];
   const otherStories = Object.values(groupedStories).filter(
-    (group: any) => group.user.id !== user?.id,
+    (group: any) => {
+      // Only show people who have stories.
+      // Fade them if every story has been viewed; otherwise show normally.
+      if (String(group.user.id) === String(user?.id)) return false;
+      return true;
+    },
   );
 
   const usersWithStoriesIds = Object.keys(groupedStories);

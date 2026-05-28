@@ -723,8 +723,21 @@ export const api = {
     },
     createConversation: async (participantIds: string[], name?: string) => {
       const currentUserId = authStorage.getItem('user_id');
+      // First check if a conversation with this user already exists
+      try {
+        const existingRes = await apiClient.get('/conversations/');
+        const existingConvos = existingRes.data;
+        const targetId = String(participantIds[0]);
+        const existingConvo = existingConvos.find((c: any) =>
+          c.participants?.some((p: any) => String(p.id) === targetId)
+        );
+        if (existingConvo) {
+          return transformConversation(existingConvo);
+        }
+      } catch {}
+      // No existing conversation found, create a new one
       const participant_ids = Array.from(
-        new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(Number)),
+        new Set([...(currentUserId ? [currentUserId] : []), ...participantIds].map(String)),
       );
       const res = await apiClient.post('/conversations/', { participant_ids, name });
       return transformConversation(res.data);
@@ -791,7 +804,7 @@ export const api = {
     },
     getAll: async () => {
       try {
-        const res = await apiClient.get('/reports/');
+        const res = await apiClient.get('/admin/reports/');
         return res.data.map(normalizeReport);
       } catch (error) {
         if (isNotFound(error)) return [];
@@ -799,7 +812,7 @@ export const api = {
       }
     },
     resolve: async (id: number, status: string) => {
-      const res = await apiClient.post(`/reports/${id}/resolve?status=${status}`);
+      const res = await apiClient.post(`/admin/reports/${id}/resolve?status=${status}`);
       return res.data;
     },
   },
@@ -826,7 +839,7 @@ export const api = {
     },
     getUsers: async () => {
       try {
-        const res = await apiClient.get('/users/?skip=0&limit=10000');
+        const res = await apiClient.get('/admin/users?skip=0&limit=1000');
         const users = res.data.map(transformUser);
         if (users.length > 0) return users;
       } catch {}
