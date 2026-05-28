@@ -231,7 +231,7 @@ const uploadFile = async (file?: File | null) => {
   const uploadRes = await apiClient.post('/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
-  return uploadRes.data.url;
+  return uploadRes.data.url || uploadRes.data.file_url || uploadRes.data.fileUrl || (typeof uploadRes.data === 'string' ? uploadRes.data : null);
 };
 
 const buildPostPayload = async (data: { caption?: string; image?: File | null; group_id?: number | string | null }) => {
@@ -523,6 +523,7 @@ export const api = {
       }
 
       const payload: Record<string, any> = {};
+      if (data.fullName !== undefined) payload.full_name = data.fullName;
       if (data.bio !== undefined) payload.bio = data.bio;
       if (data.university !== undefined) payload.university = data.university;
       if (profile_picture !== undefined) payload.profile_picture = profile_picture;

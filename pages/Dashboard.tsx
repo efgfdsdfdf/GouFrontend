@@ -62,10 +62,10 @@ export const Dashboard = () => {
   const posts = uniquePosts;
 
   useEffect(() => {
-    if (status === "success" && posts.length === 0 && !isFetchingNextPage) {
+    if (status === "error") {
       lockSession();
     }
-  }, [status, posts.length, isFetchingNextPage, lockSession]);
+  }, [status, lockSession]);
 
   return (
     <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4">
