@@ -230,6 +230,7 @@ const uploadFile = async (file?: File | null) => {
   formData.append('file', file);
   const uploadRes = await apiClient.post('/media/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 0, // Disable timeout for large file uploads
   });
   return uploadRes.data.url || uploadRes.data.file_url || uploadRes.data.fileUrl || (typeof uploadRes.data === 'string' ? uploadRes.data : null);
 };
