@@ -29,6 +29,7 @@ import { Notifications } from "./pages/Notifications";
 import { DownloadPage } from "./pages/Download";
 import { ConfirmEmail } from "./pages/ConfirmEmail";
 import { ConfirmIdentity } from "./pages/ConfirmIdentity";
+import { WelcomeBack } from "./pages/WelcomeBack";
 import { useAuthStore } from "./store";
 import { usePwaStore } from "./store/pwaStore";
 import { PwaUpdater } from "./components/pwa/PwaUpdater";
@@ -321,7 +322,7 @@ const useNotificationPopups = () => {
 };
 
 const AppRoutes = () => {
-  const { isAuthenticated, updateUser } = useAuthStore();
+  const { isAuthenticated, isSessionLocked, updateUser } = useAuthStore();
   const location = useLocation();
   const [showStartupSplash, setShowStartupSplash] = useState(true);
   const [showPageDots, setShowPageDots] = useState(false);
@@ -399,13 +400,17 @@ const AppRoutes = () => {
     ? location.pathname.slice(0, -1) 
     : location.pathname;
 
-  if (!isAuthenticated && !PUBLIC_ROUTES.includes(currentPath)) {
+  if (!isAuthenticated && !PUBLIC_ROUTES.includes(currentPath) && currentPath !== "/welcome-back") {
     const hasResetToken = window.location.hash.includes("type=recovery") || 
                           window.location.hash.includes("access_token=") || 
                           window.location.search.includes("token=");
     
     if (hasResetToken) {
       return <Navigate to={`/reset-password${window.location.search}${window.location.hash}`} replace />;
+    }
+    
+    if (isSessionLocked) {
+      return <Navigate to="/welcome-back" replace />;
     }
     return <Navigate to="/login" replace />;
   }
@@ -419,6 +424,10 @@ const AppRoutes = () => {
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/" /> : <Login />}
+        />
+        <Route
+          path="/welcome-back"
+          element={isAuthenticated ? <Navigate to="/" /> : <WelcomeBack />}
         />
         <Route path="/download" element={<DownloadPage />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../services/api';
 import { Link } from 'react-router-dom';
+import { FollowBackUrge } from '../feed/FollowBackUrge';
 
 export const RightSidebar = () => {
   const { data: suggestions } = useQuery({
@@ -28,6 +29,8 @@ export const RightSidebar = () => {
       transition={{ duration: 0.5 }}
       className="fixed right-0 top-0 h-screen w-80 border-l border-white/5 bg-black/40 backdrop-blur-3xl p-6 overflow-y-auto hidden lg:block z-40"
     >
+      <FollowBackUrge />
+      
       {/* Suggestions */}
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">

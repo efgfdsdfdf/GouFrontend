@@ -4,9 +4,11 @@ import { PostCard } from "../components/feed/PostCard";
 import { StatusCircles } from "../components/feed/StatusCircles";
 import { api } from "../services/api";
 import { Post } from "../types";
+import { useAuthStore } from "../store";
 
 export const Dashboard = () => {
   const queryClient = useQueryClient();
+  const { lockSession } = useAuthStore();
 
   const refreshFeed = async () => {
     await queryClient.invalidateQueries({ queryKey: ["feed"] });
@@ -58,6 +60,12 @@ export const Dashboard = () => {
     new Map((data?.pages.flat() || []).map((post: Post) => [post.id, post])).values(),
   );
   const posts = uniquePosts;
+
+  useEffect(() => {
+    if (status === "success" && posts.length === 0 && !isFetchingNextPage) {
+      lockSession();
+    }
+  }, [status, posts.length, isFetchingNextPage, lockSession]);
 
   return (
     <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4">

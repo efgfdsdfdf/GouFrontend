@@ -414,7 +414,7 @@ export const Messages = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative">
             {chatsLoading ? (
               <div className="flex-1 flex items-center justify-center py-20">
                 <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center font-serif font-black text-3xl text-white/20 animate-pulse border border-white/10">
@@ -426,7 +426,16 @@ export const Messages = () => {
                 No chats yet. Open a profile and tap the message button to start one.
               </div>
             ) : (
-              filteredChats.map((chat: any) => (
+              <>
+                {filteredChats.reduce((acc: number, chat: any) => acc + (chat.id !== selectedChatId ? (chat.unreadCount || 0) : 0), 0) > 0 && (
+                  <div className="sticky top-0 z-10 bg-primary/20 backdrop-blur-md px-4 py-2 border-b border-primary/30 flex items-center justify-between">
+                    <span className="text-primary text-xs font-bold uppercase tracking-wider">New Messages!</span>
+                    <span className="h-5 min-w-5 rounded-full bg-primary px-1.5 text-[10px] text-black font-bold flex items-center justify-center">
+                      {filteredChats.reduce((acc: number, chat: any) => acc + (chat.id !== selectedChatId ? (chat.unreadCount || 0) : 0), 0)}
+                    </span>
+                  </div>
+                )}
+                {filteredChats.map((chat: any) => (
                 <button
                   key={chat.id}
                   onClick={() => setSelectedChatId(chat.id)}
@@ -454,8 +463,9 @@ export const Messages = () => {
                     </div>
                   </div>
                 </button>
-              ))
-            )}
+              ))}
+            </>
+          )}
           </div>
         </aside>
 

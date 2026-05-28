@@ -2,6 +2,7 @@ const KEY_ACCESS_TOKEN = "access_token";
 const KEY_REFRESH_TOKEN = "refresh_token";
 const KEY_USER_DATA = "user_data";
 const KEY_USER_ID = "user_id";
+const KEY_SESSION_LOCKED = "session_locked";
 
 const safeGet = (storage: Storage, key: string): string | null => {
   try {
@@ -64,6 +65,7 @@ export const authStorage = {
     authStorage.removeItem(KEY_REFRESH_TOKEN);
     authStorage.removeItem(KEY_USER_DATA);
     authStorage.removeItem(KEY_USER_ID);
+    authStorage.removeItem(KEY_SESSION_LOCKED);
   },
 };
 

@@ -6,9 +6,12 @@ interface AuthState {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
+  isSessionLocked: boolean;
   login: (user: User, token: string) => void;
   updateUser: (user: User) => void;
   logout: () => void;
+  lockSession: () => void;
+  unlockSession: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => {
@@ -16,6 +19,8 @@ export const useAuthStore = create<AuthState>((set) => {
 
   const token = authStorage.getItem('access_token');
   const refreshToken = authStorage.getItem('refresh_token');
+  const isSessionLockedStr = authStorage.getItem('session_locked');
+  const isSessionLocked = isSessionLockedStr === 'true';
   const userStr = authStorage.getItem('user_data');
   let user = null;
   try {
@@ -27,12 +32,14 @@ export const useAuthStore = create<AuthState>((set) => {
   return {
     user: user,
     token: token,
-    isAuthenticated: !!user && (!!token || !!refreshToken),
+    isAuthenticated: !!user && (!!token || !!refreshToken) && !isSessionLockedStr,
+    isSessionLocked: isSessionLocked,
     login: (user, token) => {
       authStorage.setItem('access_token', token);
       authStorage.setItem('user_data', JSON.stringify(user));
       authStorage.setItem('user_id', user.id);
-      set({ user, token, isAuthenticated: true });
+      authStorage.removeItem('session_locked');
+      set({ user, token, isAuthenticated: true, isSessionLocked: false });
     },
     updateUser: (user) => {
       authStorage.setItem('user_data', JSON.stringify(user));
@@ -40,7 +47,15 @@ export const useAuthStore = create<AuthState>((set) => {
     },
     logout: () => {
       authStorage.clearAuth();
-      set({ user: null, token: null, isAuthenticated: false });
+      set({ user: null, token: null, isAuthenticated: false, isSessionLocked: false });
+    },
+    lockSession: () => {
+      authStorage.setItem('session_locked', 'true');
+      set({ isAuthenticated: false, isSessionLocked: true });
+    },
+    unlockSession: () => {
+      authStorage.removeItem('session_locked');
+      set((state) => ({ isAuthenticated: true, isSessionLocked: false }));
     },
   };
 });
