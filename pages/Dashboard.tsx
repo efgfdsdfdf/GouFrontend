@@ -5,6 +5,7 @@ import { StatusCircles } from "../components/feed/StatusCircles";
 import { api } from "../services/api";
 import { Post } from "../types";
 import { useAuthStore } from "../store";
+import { FollowBackUrge } from "../components/feed/FollowBackUrge";
 
 export const Dashboard = () => {
   const queryClient = useQueryClient();
@@ -68,7 +69,8 @@ export const Dashboard = () => {
   }, [status, lockSession]);
 
   return (
-    <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4">
+    <div className="max-w-2xl mx-auto w-full pb-24 pt-0 md:pt-4 px-4 md:px-0">
+      <FollowBackUrge className="block lg:hidden mt-4" />
       {/* Stories Section */}
       <div className="mb-2">
         <div className="mb-4">
