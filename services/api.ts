@@ -524,7 +524,6 @@ export const api = {
       }
 
       const payload: Record<string, any> = {};
-      if (data.fullName !== undefined) payload.full_name = data.fullName;
       if (data.bio !== undefined) payload.bio = data.bio;
       if (data.university !== undefined) payload.university = data.university;
       if (profile_picture !== undefined) payload.profile_picture = profile_picture;
