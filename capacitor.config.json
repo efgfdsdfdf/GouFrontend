@@ -1,0 +1,17 @@
+{
+  "appId": "com.gounion.app",
+  "appName": "GoUnion",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 2000,
+      "backgroundColor": "#030303",
+      "androidSplashResourceName": "splash",
+      "showSpinner": false
+    }
+  }
+}

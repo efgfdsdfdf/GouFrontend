@@ -1,0 +1,101 @@
+* [33m836e13a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m hope
+* [33mdf73f9a[m hope
+* [33mef4560d[m hope
+* [33m4d0d502[m hope
+* [33m7362b57[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m first commit
+* [33me2eb605[m feat: add chat enhancements - unread badges, read receipts, voice notes, stickers, fullscreen group chat
+* [33m36f04be[m Keep feed scrubber controls visible while actively dragging
+* [33m415397c[m Instantly update scrubber UI while dragging for flawless sliding feel
+* [33m987162f[m Massively increase touch hit area for scrubbers on Feed and Discover pages
+* [33mb98920b[m Fix video scrubber dragging on mobile for Feed and Discover
+* [33m5caa579[m Restore GoUnion label and Fullscreen button on Feed, refine Discover controls
+* [33m3162b55[m Resize feed videos, add TikTok-style pause icon, fix scrubber, auto-play sooner
+* [33m29a6c67[m Enhance video controls on Discover and Feed pages
+* [33m8db5ebe[m Fix blank screen crash caused by missing toast hook
+* [33m3875163[m Fix network error logout bug and add offline toast notifications
+* [33m08a0968[m Remove delete button from Discover page
+* [33m058adcb[m Lower Discover sidebar buttons
+* [33macc44cf[m Fix Discover page bottom overlay layout
+* [33m5ebf2a0[m Fix UI/UX issues, add real-time WebSocket chat and groups features
+* [33ma8c3d04[m Update production API URL
+* [33mf0e7c09[m Improve chat feed reels and admin flows
+*   [33maa52458[m CodeXmike Fixed
+[32m|[m[33m\[m  
+[32m|[m * [33ma7e436c[m Fix Profile.tsx syntax error and remove WelcomeBack
+[32m|[m * [33m30efec9[m Fix feed autoplay, discover layout, and story filtering
+* [33m|[m [33m63b6bb0[m CodeXmike Fixed
+[33m|[m[33m/[m  
+* [33m3843ff8[m CodeX
+* [33m23cda3f[m fix: remove full_name from profile update payload - backend rejects unknown fields causing silent failure
+* [33m84cd284[m feat: follow back urge on mobile and dismiss functionality
+* [33m894ab8f[m fix: disable timeout for media uploads
+* [33ma7a6ba4[m fix: session lock trigger, profile edit name, upload file url
+* [33m1ea9a35[m feat: session lock, follow back urge, chat notifications
+* [33m87a188d[m Follow-back reminder in notification dropdown
+* [33mb49bd7b[m Fix chat prep integer IDs and admin getUsers endpoint
+* [33mce03990[m Fix bugs: message ticks, contact suggestions, story circles, profile load times, media upload, and notification states
+* [33m0dfe056[m Fix admin loading chat preparation and comments
+* [33m0d5b03f[m Fix uploads messaging profile and story states
+* [33m64539ad[m Fix notifications comments and profile editing
+* [33md7fc881[m Fix chat creation and media upload flows
+* [33me0f0b97[m Fix sharing, stories, discover, and chat attachments
+* [33maa7ea21[m Fix share buttons, follow button, admin fallback, notifications, profile stats, and message navigation
+* [33m68c56c8[m feat: Implement Faux Loading Skeleton Feed in Dashboard
+* [33m69700b0[m Fix feed posting, discover reel creation, and profile stats
+* [33m99d2b13[m Fix UI bugs, admin email check, and profile stats
+* [33m376dbc1[m fix: improve admin identification via username fallback and login credentials fallback
+* [33mee4bc66[m fix: sync user profile on startup to refresh role and enable admin visibility
+*   [33me298ae4[m Merge branch 'goufrontend-vercel-fix'
+[34m|[m[35m\[m  
+[34m|[m * [33m2c395dd[m fix: feed videos, comment modals, camera inputs, chat skeletons, and admin visibility
+[34m|[m * [33m8bd6309[m Move CreateReel to Profile, fix owner checks, and optimistically mark notifications as read
+[34m|[m * [33m16901ba[m Fix UI bugs, admin redirect, notifications, and chat mobile layout
+[34m|[m * [33m60475d4[m[33m ([m[1;31morigin/goufrontend-vercel-fix[m[33m)[m Fix bugs on Discover, Feed, Messages, Notifications, and add admin email check
+[34m|[m * [33mb9076dd[m Fix camera upload, increase axios timeout, fix icon URL, remove noise.svg, bump SW version
+[34m|[m * [33md3086e6[m Fix mobile visibility, add ErrorBoundary, filter read notifications, fix avatar URLs, add chat online status, and setup Web Push Service Worker
+[34m|[m * [33m14c8da0[m Fix syntax errors, implement TikTok-style discover sidebar, fix upload errors, optimize rendering
+[34m|[m * [33m09c327e[m Fix UI bugs, messaging flow, missing loading skeletons, and notifications
+[34m|[m * [33m2b3da60[m Fix chat routing, notification popup behavior, story modal sizing, post deletion caches, comment UX, and add React types
+[34m|[m * [33me75f6d4[m Fix signup confirmation page, chat routing, notifications, search, sharing, and reel creation UI
+[34m|[m * [33m32565b5[m fix: serve PWA assets on Vercel
+[34m|[m * [33m229813c[m fix: remove download debug panel
+[34m|[m * [33mbe2beef[m fix: Expose SW Error string in debug UI to find the root cause
+[34m|[m * [33me0fc4c2[m fix: Exclude static assets from Vercel rewrite and add explicit SW registration script
+[34m|[m * [33mb76ccf5[m fix: Enable clientsClaim and skipWaiting to force SW activation instantly
+[34m|[m * [33m3bb4c68[m fix: Add debug overlay and force script injection for PWA Service Worker
+[34m|[m * [33mf7fb0e5[m fix: Add inline script in index.html to catch beforeinstallprompt immediately
+[34m|[m * [33md3d483c[m fix: Add missing manifest link to index.html for PWA installability
+[34m|[m * [33m05d7e67[m fix: move beforeinstallprompt listener to index.tsx to avoid race conditions
+[34m|[m * [33mffb1f63[m feat: Make download page the default landing page and remove login install button
+[34m|[m * [33m9d29b9a[m feat: Add direct native install logic to Login page button
+[34m|[m * [33m45b7f14[m fix: Add download link to login page and fix trailing slash routing bug
+[34m|[m * [33m5f8555c[m feat: Add PWA functionality with custom install page and update prompts
+[34m|[m * [33m5c2f034[m Improve direct chat entry and invites
+[34m|[m * [33m57edfaa[m Handle missing notification endpoints
+[34m|[m * [33m18be34c[m Improve live updates and comment experience
+[34m|[m * [33mbc66fe1[m Improve chat and content refresh behavior
+[34m|[m * [33mdc04ab9[m Improve profile posts and reels layout
+[34m|[m * [33mdff4754[m Separate feed reels and improve chat notifications
+[34m|[m * [33m9ea20fe[m Fix feed and discover reel API calls
+[34m|[m * [33m8029adb[m Fix share gesture timeout, notification mobile width, and feed API crash
+[34m|[m * [33md6e0ab6[m Fix CreateReel modal overflowing on small mobile screens
+[34m|[m * [33m8cd16f4[m Fix feed API crash by removing unsupported parameter
+[34m|[m * [33m9b48c87[m Fix navbar gap and Discover scaling
+[34m|[m * [33m62e8745[m Enhance Discover UI, isolate feed logic, fix refresh drag
+[34m|[m * [33m0fd2d12[m Fix React syntax errors introduced in previous commit
+[34m|[m * [33mcd71676[m UI improvements: Pull to refresh, dynamic video sizing, snap scroll on discover, search in mobile navbar, removed hamburger menu
+[34m|[m * [33mdc76e14[m  Fix UI issues and search/notification logic
+[34m|[m * [33mcfa7454[m  Fix mobile nav bottom positioning and swap Discover and Groups
+[34m|[m * [33mbaaec66[m  Fix redirect to login on password reset links
+[34m|[m * [33ma541935[m Fix password reset token parsing and add visibility toggle to login
+[34m|[m * [33m76c2b13[m feat: add password visibility toggle in Login/Signup
+[34m|[m * [33me1575bd[m Remove download flow and persist sessions
+[34m|[m * [33m9848591[m Fix Vercel build syntax errors
+[34m|[m * [33m33e0b11[m Add files via upload
+* [33maf812eb[m Fix Vercel build syntax errors
+* [33m9856617[m chore: remove obsolete media assets and temporary confirmation HTML file
+* [33m2ed0d79[m chore: migrate render.yaml from python backend to static frontend deployment configuration
+* [33m413f1f3[m chore: split repositories (frontend only cleanup)
+* [33m62c3d0a[m chore: split frontend and backend repositories
+* [33m8652724[m feat: import Optional and quote from urllib.parse and include schemas in main router imports
+*   [33m3834e50[m
