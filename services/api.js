@@ -6,10 +6,32 @@ const DEFAULT_PROD_API_URL = 'https://gounion-backend.onrender.com';
 export const API_URL = import.meta.env.VITE_API_URL ||
     (import.meta.env.DEV ? 'http://127.0.0.1:8001' : DEFAULT_PROD_API_URL);
 // Create Axios instance
+// 120 s default — enough for a Render free-tier cold start (~30-90 s)
 export const apiClient = axios.create({
     baseURL: API_URL,
-    timeout: 60000,
+    timeout: 120000,
 });
+
+/**
+ * Ping the backend health endpoint so it wakes up before the user
+ * tries to log in or sign up. Call this once when the app mounts.
+ * Fires-and-forgets — never throws.
+ */
+export const keepAlive = () => {
+    // Only ping in production; dev server is always awake
+    if (import.meta.env.DEV) return;
+    const ping = () =>
+        fetch(`${API_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(10000) })
+            .catch(() => { /* ignore — server might still be sleeping */ });
+    // Ping immediately on load, then every 10 minutes to prevent sleep
+    ping();
+    setInterval(ping, 10 * 60 * 1000);
+};
+
+/** Emit a custom event so any component can show "Server waking up..." UI */
+const emitWakeUp = (isWaking) =>
+    window.dispatchEvent(new CustomEvent('gounion-server-waking', { detail: { isWaking } }));
+
 let refreshPromise = null;
 // Add interceptor to attach access token
 apiClient.interceptors.request.use((config) => {
@@ -22,8 +44,28 @@ apiClient.interceptors.request.use((config) => {
     return config;
 }, (error) => Promise.reject(error));
 // Add interceptor to handle unauthorized/suspended responses
-apiClient.interceptors.response.use((response) => response, async (error) => {
+apiClient.interceptors.response.use((response) => {
+    // Clear any "waking up" banner on a successful response
+    emitWakeUp(false);
+    return response;
+}, async (error) => {
+    // Detect cold-start timeout: retry once with extended timeout + user feedback
+    const isTimeout = error.code === 'ECONNABORTED' || error.message?.includes('timeout');
     const originalRequest = error.config;
+    if (isTimeout && originalRequest && !originalRequest._coldStartRetry) {
+        originalRequest._coldStartRetry = true;
+        emitWakeUp(true);
+        // Give the server up to 90 more seconds to finish waking up
+        originalRequest.timeout = 90000;
+        try {
+            const result = await apiClient(originalRequest);
+            emitWakeUp(false);
+            return result;
+        } catch (retryError) {
+            emitWakeUp(false);
+            return Promise.reject(retryError);
+        }
+    }
     const requestUrl = originalRequest?.url || '';
     const isSuspended = error.response?.status === 403 &&
         error.response?.data?.detail === "Your account has been suspended.";
